@@ -17,6 +17,7 @@
       --bad: #ff6b6b;
       --warn: #7eb8ff;
       --accent: #6ea8fe;
+      --side: 360px;
     }
     * { box-sizing: border-box; }
     body {
@@ -26,10 +27,28 @@
       color: var(--text);
       line-height: 1.45;
     }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--side);
+      min-height: 100vh;
+    }
+    .main { padding: 24px 16px 48px; max-width: 980px; }
+    .sidebar {
+      border-left: 1px solid var(--border);
+      background: #12151b;
+      padding: 16px 12px 24px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
     h1 { font-size: 1.35rem; margin: 0 0 4px; }
-    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
-    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    h2.side-title { font-size: 0.95rem; margin: 0; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -37,7 +56,39 @@
       padding: 14px 16px;
     }
     .card h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
-    .big { font-size: 1.6rem; font-weight: 700; }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .card-head h2 { margin: 0; }
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border-radius: 8px;
+      background: #2a3140;
+      color: var(--muted);
+      box-shadow: none;
+    }
+    .icon-btn:hover:not(:disabled) {
+      background: #3a4458;
+      color: var(--text);
+      filter: none;
+      transform: none;
+      box-shadow: none;
+    }
+    .icon-btn.danger:hover:not(:disabled) {
+      background: rgba(255,107,107,.18);
+      color: var(--bad);
+    }
+    .icon-btn svg { width: 16px; height: 16px; display: block; }
+    .big { font-size: 1.5rem; font-weight: 700; }
     .pill {
       display: inline-block;
       padding: 3px 10px;
@@ -57,19 +108,19 @@
     .chip.quota { background: rgba(245,185,66,.15); color: var(--quota); }
     .chip.bad { background: rgba(255,107,107,.15); color: var(--bad); }
     .chip.warn { background: rgba(126,184,255,.15); color: var(--warn); }
-    pre {
+    .log-box {
       margin: 0;
       padding: 12px;
       background: #0c0e13;
       border-radius: 10px;
-      font-size: 0.72rem;
-      line-height: 1.35;
+      font-size: 0.78rem;
+      line-height: 1.45;
       overflow: auto;
-      max-height: 320px;
-      white-space: pre-wrap;
-      word-break: break-all;
+      max-height: 360px;
       color: #c5d0e0;
     }
+    .log-line { padding: 3px 0; border-bottom: 1px solid rgba(42,49,64,.55); }
+    .log-line:last-child { border-bottom: none; }
     .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
     button {
       background: var(--accent);
@@ -79,52 +130,191 @@
       padding: 8px 14px;
       font-weight: 600;
       cursor: pointer;
+      transition: transform .12s ease, filter .12s ease, box-shadow .12s ease, background .12s ease, opacity .12s ease;
+      box-shadow: 0 1px 0 rgba(0,0,0,.25);
+      user-select: none;
     }
+    button:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.35); }
+    button:active:not(:disabled) { filter: brightness(0.92); transform: translateY(1px) scale(0.97); box-shadow: none; }
     button.secondary { background: #2a3140; color: var(--text); }
+    button.secondary:hover:not(:disabled) { background: #354054; }
     button.danger { background: #8b3a3a; color: #fff; }
+    button.danger:hover:not(:disabled) { background: #a44444; }
     button.success { background: #2d6a4f; color: #fff; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.success:hover:not(:disabled) { background: #35845f; }
+    button.kick { background: #b7791f; color: #1a1205; }
+    button.kick:hover:not(:disabled) { background: #d69e2e; }
+    button:disabled { opacity: 0.45; cursor: not-allowed; filter: none; transform: none; box-shadow: none; }
     .hint { color: var(--quota); font-size: 0.85rem; margin: 0 0 14px; }
     .err { color: var(--bad); margin-top: 12px; }
-    @media (max-width: 640px) { .big { font-size: 1.25rem; } }
+    .side-meta { color: var(--muted); font-size: 0.78rem; }
+    .side-search {
+      width: 100%;
+      background: #0c0e13;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 8px 10px;
+      font-size: 0.85rem;
+    }
+    .inv-list {
+      flex: 1;
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #0c0e13;
+    }
+    .inv-item {
+      padding: 10px 10px 8px;
+      border-bottom: 1px solid rgba(42,49,64,.7);
+    }
+    .inv-item:last-child { border-bottom: none; }
+    .inv-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+    .inv-name { font-weight: 650; font-size: 0.88rem; }
+    .inv-id { color: var(--muted); font-size: 0.75rem; }
+    .inv-detail { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
+    .side-actions { display: flex; gap: 8px; }
+    .side-actions button { flex: 1; padding: 7px 8px; font-size: 0.8rem; }
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .row-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-wrap: nowrap;
+    }
+    .sort-btns {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .sort-btns button {
+      padding: 0;
+      width: 22px;
+      height: 16px;
+      font-size: 0.65rem;
+      line-height: 1;
+      border-radius: 4px;
+      background: #2a3140;
+      color: var(--muted);
+      box-shadow: none;
+    }
+    .sort-btns button:hover:not(:disabled) {
+      background: #3a4458;
+      color: var(--text);
+      filter: none;
+      transform: none;
+      box-shadow: none;
+    }
+    .token-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+    .token-edit-msg { color: var(--muted); font-size: 0.82rem; margin: 8px 0 0; }
+    .token-edit-msg.ok { color: var(--ok); }
+    .token-edit-msg.bad { color: var(--bad); }
+    #tokenTable input {
+      width: 100%;
+      min-width: 0;
+      background: #0c0e13;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 7px 9px;
+      font-size: 0.82rem;
+    }
+    #tokenTable input[data-field="token"] {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar {
+        position: relative;
+        height: auto;
+        max-height: 70vh;
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>MT 離線抓取儀表板</h1>
-    <p class="sub">本機監看 <code>dist/offline</code> 進度與 FinMind token 狀態</p>
+  <div class="shell">
+    <div class="main">
+      <h1>MT 離線抓取儀表板</h1>
+      <p class="sub">本機監看 <code>dist/offline</code> 進度與 FinMind token 狀態</p>
 
-    <div class="toolbar">
-      <button class="success" id="startBtn">啟動抓取</button>
-      <button class="danger" id="stopBtn">停止抓取</button>
-      <button id="refreshBtn">立即刷新</button>
-      <button class="secondary" id="probeBtn">重測 Token</button>
-      <label class="sub"><input type="checkbox" id="autoRefresh" checked /> 每 10 秒自動刷新</label>
-      <span class="sub" id="updatedAt">—</span>
+      <div class="toolbar">
+        <button class="success" id="startBtn" type="button">啟動抓取</button>
+        <button class="danger" id="stopBtn" type="button">停止抓取</button>
+        <button class="kick" id="kickBtn" type="button" title="重啟行程並清掉記憶體冷卻，立刻再打 API（手動測試）">強制續抓（清冷卻）</button>
+        <button id="refreshBtn" type="button">立即刷新</button>
+        <button class="secondary" id="probeBtn" type="button">重測 Token</button>
+        <label class="sub" style="margin:0"><input type="checkbox" id="autoRefresh" checked /> 每 10 秒自動刷新</label>
+        <span class="sub" id="updatedAt" style="margin:0">—</span>
+      </div>
+      <p class="hint" id="procHint" hidden></p>
+      <div id="error" class="err" hidden></div>
+      <div class="grid" id="stats"></div>
+
+      <div class="card" style="margin-top:14px">
+        <h2>Token 狀態</h2>
+        <table id="tokenTable">
+          <thead id="tokenHead">
+            <tr><th></th><th>帳號</th><th>狀態</th><th>說明</th><th>尾碼</th></tr>
+          </thead>
+          <tbody id="tokenBody"></tbody>
+        </table>
+        <div class="token-actions">
+          <button class="secondary btn-sm" id="tokenAddBtn" type="button">新增一組</button>
+          <button class="secondary btn-sm" id="tokenReloadBtn" type="button">重新載入</button>
+          <button class="success btn-sm" id="tokenSaveBtn" type="button" hidden>儲存</button>
+          <button class="kick btn-sm" id="tokenSaveKickBtn" type="button" hidden>儲存並強制續抓</button>
+        </div>
+        <p class="token-edit-msg" id="tokenEditMsg"></p>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-head">
+          <h2>最近 Log（中文）</h2>
+          <button class="icon-btn danger" id="clearLogBtn" type="button" title="清除 log" aria-label="清除 log">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+              <path d="M10 11v6"></path>
+              <path d="M14 11v6"></path>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+            </svg>
+          </button>
+        </div>
+        <div class="log-box" id="logBox">載入中…</div>
+      </div>
     </div>
-    <p class="hint" id="procHint" hidden></p>
 
-    <div id="error" class="err" hidden></div>
-
-    <div class="grid" id="stats"></div>
-
-    <div class="card" style="margin-top:14px">
-      <h2>Token 狀態</h2>
-      <table>
-        <thead>
-          <tr><th>帳號</th><th>狀態</th><th>說明</th><th>尾碼</th></tr>
-        </thead>
-        <tbody id="tokenBody"></tbody>
-      </table>
-    </div>
-
-    <div class="card" style="margin-top:14px">
-      <h2>最近 Log</h2>
-      <pre id="logBox">載入中…</pre>
-    </div>
+    <aside class="sidebar">
+      <h2 class="side-title">資料庫驗證</h2>
+      <div class="side-meta" id="invSummary">掃描中…</div>
+      <input class="side-search" id="invSearch" type="search" placeholder="搜尋代號或名稱…" />
+      <div class="side-actions">
+        <button class="secondary" id="invRefreshBtn" type="button">重新驗證</button>
+        <button class="secondary" id="invMoreBtn" type="button">載入更多</button>
+      </div>
+      <div class="inv-list" id="invList"></div>
+    </aside>
   </div>
 
   <script>
+    let invOffset = 0;
+    let invQuery = "";
+    let invTotal = 0;
+    const INV_PAGE = 60;
+    let tokenEditEntries = [];
+    let tokenEditing = false;
+    let tokenOrderDirty = false;
+    let lastTokenStatus = [];
+    let focusTokenIndex = null;
+
     const fmtBytes = (n) => {
       if (!n) return "0 B";
       const u = ["B", "KB", "MB", "GB"];
@@ -134,6 +324,46 @@
     };
 
     const chip = (tone, label) => `<span class="chip ${tone}">${label}</span>`;
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    function renderInventory(payload, append) {
+      const list = document.getElementById("invList");
+      const sum = payload.summary || {};
+      invTotal = payload.total || 0;
+      document.getElementById("invSummary").textContent =
+        `磁碟 ${sum.files ?? 0} 檔 · 通過 ${sum.ok ?? 0} · 警告 ${sum.warn ?? 0} · 失敗 ${sum.bad ?? 0}` +
+        (invQuery ? ` · 篩選 ${invTotal}` : "");
+
+      const rows = (payload.items || []).map(it => `
+        <div class="inv-item">
+          <div class="inv-top">
+            <div>
+              <div class="inv-name">${esc(it.name)}</div>
+              <div class="inv-id">${esc(it.id)} · ${esc(it.type || "")}</div>
+            </div>
+            ${chip(it.tone || "warn", it.label || "—")}
+          </div>
+          <div class="inv-detail">
+            ${it.rows ?? 0} 日 · ${esc(it.first || "—")} → ${esc(it.last || "—")}
+            · ${fmtBytes(it.bytes || 0)}
+          </div>
+        </div>
+      `).join("");
+
+      if (append) list.insertAdjacentHTML("beforeend", rows);
+      else list.innerHTML = rows || `<div class="inv-item side-meta">尚無分檔，或沒有符合搜尋的項目</div>`;
+
+      invOffset = (payload.offset || 0) + (payload.items || []).length;
+      document.getElementById("invMoreBtn").disabled = invOffset >= invTotal;
+    }
+
+    async function loadInventory({ append = false, reset = false } = {}) {
+      if (reset) invOffset = 0;
+      const url = `/api/inventory?limit=${INV_PAGE}&offset=${append ? invOffset : 0}&q=${encodeURIComponent(invQuery)}`;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error(`inventory HTTP ${res.status}`);
+      renderInventory(await res.json(), append);
+    }
 
     function render(data) {
       const p = data.progress || {};
@@ -146,9 +376,7 @@
       document.getElementById("stats").innerHTML = `
         <div class="card">
           <h2>背景行程</h2>
-          <div class="big">
-            <span class="pill ${proc.running ? "running" : "stopped"}">${proc.running ? "執行中" : "已停止"}</span>
-          </div>
+          <div class="big"><span class="pill ${proc.running ? "running" : "stopped"}">${proc.running ? "執行中" : "已停止"}</span></div>
           <div class="sub">PID ${proc.pid ?? "—"}</div>
         </div>
         <div class="card">
@@ -165,36 +393,45 @@
         <div class="card">
           <h2>Token 概況</h2>
           <div class="big">${ts.total ?? 0} 組</div>
-          <div class="sub">可用 ${ts.ok ?? 0} · 402 ${ts.quota402 ?? 0} · 403 ${ts.quota403 ?? 0} · 其他額度 ${Math.max(0, (ts.quota ?? 0) - (ts.quota402 ?? 0) - (ts.quota403 ?? 0))} · 無效 ${ts.bad ?? 0}</div>
+          <div class="sub">可用 ${ts.ok ?? 0} · 402 ${ts.quota402 ?? 0} · 403 ${ts.quota403 ?? 0} · 無效 ${ts.bad ?? 0}</div>
         </div>
       `;
 
-      const tbody = document.getElementById("tokenBody");
-      tbody.innerHTML = (data.tokens || []).map(t => `
-        <tr>
-          <td>${t.name}</td>
-          <td>${chip(t.tone, t.label)}${t.code && t.code !== 200 ? ` <span class="sub">#${t.code}</span>` : ""}</td>
-          <td>${t.msg || ""}</td>
-          <td>…${t.tail || ""}</td>
-        </tr>
-      `).join("") || "<tr><td colspan='4'>尚無 token 設定</td></tr>";
+      const incoming = data.tokens || [];
+      if (tokenEditing || tokenOrderDirty) {
+        const byName = new Map(incoming.map(t => [t.name, t]));
+        lastTokenStatus = lastTokenStatus.map(t => byName.get(t.name) || t);
+        for (const t of incoming) {
+          if (!lastTokenStatus.some(x => x.name === t.name)) lastTokenStatus.push(t);
+        }
+      } else {
+        lastTokenStatus = incoming;
+      }
+      if (!tokenEditing) renderTokenTable();
 
-      document.getElementById("logBox").textContent = (data.logTail || []).join("\n") || "(無 log)";
+      const logs = data.logTail || [];
+      document.getElementById("logBox").innerHTML = logs.length
+        ? logs.map(l => `<div class="log-line">${esc(l)}</div>`).join("")
+        : "<div class='side-meta'>（尚無 log）</div>";
+
       document.getElementById("updatedAt").textContent = `更新：${data.generatedAt || "—"}`;
       document.getElementById("error").hidden = true;
-
       document.getElementById("startBtn").disabled = !!proc.running;
       document.getElementById("stopBtn").disabled = !proc.running;
 
       const hint = document.getElementById("procHint");
       if (!proc.running && proc.note === "stale_pid") {
         hint.hidden = false;
-        hint.textContent = "行程已結束（PID 檔仍在）。常見原因：Mac 睡眠、關閉終端機，或 10 組 token 同時額度用盡後等待中被系統清掉。按「啟動抓取」可續跑。";
+        hint.textContent = "行程已結束（PID 檔仍在）。按「啟動抓取」或「強制續抓」可繼續。";
       } else if (!proc.running && (ts.quota ?? 0) > 0 && (ts.ok ?? 0) === 0) {
         hint.hidden = false;
-        hint.textContent = `全部 token 額度用盡（402: ${ts.quota402 ?? 0}、403: ${ts.quota403 ?? 0}）；啟動後會自動等到整點再抓，請保持 Mac 清醒。`;
+        hint.textContent = `全部 token 額度用盡（402: ${ts.quota402 ?? 0}、403: ${ts.quota403 ?? 0}）。可用「強制續抓」立刻再試。`;
       } else {
         hint.hidden = true;
+      }
+
+      if (data.inventory && !invQuery) {
+        renderInventory(data.inventory, false);
       }
     }
 
@@ -206,16 +443,232 @@
       return body;
     }
 
+    function setTokenEditMsg(text, tone) {
+      const el = document.getElementById("tokenEditMsg");
+      el.textContent = text || "";
+      el.className = "token-edit-msg" + (tone ? ` ${tone}` : "");
+    }
+
+    function updateTokenActionVisibility() {
+      const showSave = tokenEditing || tokenOrderDirty;
+      document.getElementById("tokenSaveBtn").hidden = !showSave;
+      document.getElementById("tokenSaveKickBtn").hidden = !showSave;
+    }
+
+    function statusForName(name) {
+      return lastTokenStatus.find(t => t.name === name) || null;
+    }
+
+    function swapItems(arr, i, j) {
+      if (i < 0 || j < 0 || i >= arr.length || j >= arr.length) return false;
+      const tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+      return true;
+    }
+
+    function syncTokenEditFromDom() {
+      const rows = document.querySelectorAll("#tokenBody tr[data-edit-index]");
+      if (!rows.length) return;
+      tokenEditEntries = Array.from(rows).map(row => ({
+        name: row.querySelector('[data-field="name"]').value.trim(),
+        token: row.querySelector('[data-field="token"]').value.trim(),
+      }));
+    }
+
+    function alignEntriesToStatusOrder() {
+      if (!lastTokenStatus.length || !tokenEditEntries.length) return;
+      const byName = new Map(tokenEditEntries.map(e => [e.name, e]));
+      const ordered = [];
+      for (const t of lastTokenStatus) {
+        const hit = byName.get(t.name);
+        if (hit) {
+          ordered.push(hit);
+          byName.delete(t.name);
+        }
+      }
+      for (const e of byName.values()) ordered.push(e);
+      tokenEditEntries = ordered;
+    }
+
+    async function moveToken(index, delta) {
+      try {
+        if (tokenEditing) syncTokenEditFromDom();
+        else await ensureTokenEntriesLoaded();
+        alignEntriesToStatusOrder();
+        const j = index + delta;
+        if (!swapItems(tokenEditEntries, index, j)) return;
+        swapItems(lastTokenStatus, index, j);
+        tokenOrderDirty = true;
+        setTokenEditMsg("順序已變更，請按儲存寫入檔案（抓取需強制續抓才會套用）。", "");
+        renderTokenTable();
+      } catch (e) {
+        setTokenEditMsg(e.message, "bad");
+      }
+    }
+
+    function bindSortButtons(root) {
+      root.querySelectorAll(".token-up-btn").forEach(btn => {
+        btn.onclick = () => moveToken(Number(btn.dataset.index), -1);
+      });
+      root.querySelectorAll(".token-down-btn").forEach(btn => {
+        btn.onclick = () => moveToken(Number(btn.dataset.index), 1);
+      });
+    }
+
+    function sortControls(i, total) {
+      return `
+        <span class="sort-btns">
+          <button type="button" class="token-up-btn" data-index="${i}" title="上移" ${i === 0 ? "disabled" : ""}>▲</button>
+          <button type="button" class="token-down-btn" data-index="${i}" title="下移" ${i >= total - 1 ? "disabled" : ""}>▼</button>
+        </span>`;
+    }
+
+    function renderTokenTable() {
+      const head = document.getElementById("tokenHead");
+      const body = document.getElementById("tokenBody");
+      updateTokenActionVisibility();
+
+      if (tokenEditing) {
+        head.innerHTML = `<tr><th></th><th>帳號</th><th>Token</th><th>狀態</th></tr>`;
+        if (!tokenEditEntries.length) {
+          body.innerHTML = `<tr><td colspan="4" class="side-meta">尚無 Token，請按「新增一組」</td></tr>`;
+          return;
+        }
+        const total = tokenEditEntries.length;
+        body.innerHTML = tokenEditEntries.map((e, i) => {
+          const st = statusForName(e.name);
+          return `
+            <tr data-edit-index="${i}">
+              <td>
+                <div class="row-actions">
+                  ${sortControls(i, total)}
+                  <button class="danger btn-sm token-del-btn" type="button" data-index="${i}">刪除</button>
+                </div>
+              </td>
+              <td><input data-field="name" type="text" placeholder="帳號名稱" value="${esc(e.name || "")}" autocomplete="off" /></td>
+              <td><input data-field="token" type="password" placeholder="JWT token" value="${esc(e.token || "")}" autocomplete="off" spellcheck="false" /></td>
+              <td>${st ? `${chip(st.tone, st.label)}${st.code && st.code !== 200 ? ` <span class="sub">#${st.code}</span>` : ""}` : `<span class="sub">—</span>`}</td>
+            </tr>`;
+        }).join("");
+
+        body.querySelectorAll(".token-del-btn").forEach(btn => {
+          btn.onclick = () => {
+            syncTokenEditFromDom();
+            tokenEditEntries.splice(Number(btn.dataset.index), 1);
+            tokenOrderDirty = true;
+            renderTokenTable();
+          };
+        });
+        bindSortButtons(body);
+        body.querySelectorAll("input[data-field='token']").forEach(inp => {
+          inp.addEventListener("focus", () => { if (inp.type === "password") inp.type = "text"; });
+          inp.addEventListener("blur", () => { inp.type = "password"; });
+        });
+        if (focusTokenIndex != null) {
+          const row = body.querySelector(`tr[data-edit-index="${focusTokenIndex}"]`);
+          const field = row && (row.querySelector('[data-field="token"]') || row.querySelector('[data-field="name"]'));
+          if (field) field.focus();
+          focusTokenIndex = null;
+        }
+        return;
+      }
+
+      head.innerHTML = `<tr><th></th><th>帳號</th><th>狀態</th><th>說明</th><th>尾碼</th></tr>`;
+      const tokens = lastTokenStatus;
+      const total = tokens.length;
+      body.innerHTML = tokens.length
+        ? tokens.map((t, i) => `
+            <tr>
+              <td>
+                <div class="row-actions">
+                  ${sortControls(i, total)}
+                  <button class="secondary btn-sm token-edit-btn" type="button" data-index="${i}">編輯</button>
+                </div>
+              </td>
+              <td>${esc(t.name)}</td>
+              <td>${chip(t.tone, t.label)}${t.code && t.code !== 200 ? ` <span class="sub">#${t.code}</span>` : ""}</td>
+              <td>${esc(t.msg || "")}</td>
+              <td>…${esc(t.tail || "")}</td>
+            </tr>`).join("")
+        : `<tr><td colspan="5" class="side-meta">尚無 token 設定</td></tr>`;
+
+      body.querySelectorAll(".token-edit-btn").forEach(btn => {
+        btn.onclick = () => enterTokenEdit(Number(btn.dataset.index));
+      });
+      bindSortButtons(body);
+    }
+
+    async function ensureTokenEntriesLoaded() {
+      if (tokenEditEntries.length) return;
+      const res = await fetch("/api/tokens", { cache: "no-store" });
+      if (!res.ok) throw new Error(`tokens HTTP ${res.status}`);
+      const body = await res.json();
+      tokenEditEntries = (body.entries || []).map(e => ({ name: e.name || "", token: e.token || "" }));
+    }
+
+    async function enterTokenEdit(index) {
+      try {
+        await ensureTokenEntriesLoaded();
+        alignEntriesToStatusOrder();
+        if (lastTokenStatus[index]) {
+          const name = lastTokenStatus[index].name;
+          const found = tokenEditEntries.findIndex(e => e.name === name);
+          focusTokenIndex = found >= 0 ? found : index;
+        } else {
+          focusTokenIndex = index;
+        }
+        tokenEditing = true;
+        setTokenEditMsg("編輯中：改完請按儲存。寫入 finmind_tokens.local.json；抓取行程需強制續抓才會載入。", "");
+        renderTokenTable();
+      } catch (e) {
+        setTokenEditMsg(e.message, "bad");
+      }
+    }
+
+    async function loadTokenEditor({ keepEditing = false } = {}) {
+      const res = await fetch("/api/tokens", { cache: "no-store" });
+      if (!res.ok) throw new Error(`tokens HTTP ${res.status}`);
+      const body = await res.json();
+      tokenEditEntries = (body.entries || []).map(e => ({ name: e.name || "", token: e.token || "" }));
+      if (!keepEditing) {
+        tokenEditing = false;
+        tokenOrderDirty = false;
+      }
+      renderTokenTable();
+      setTokenEditMsg(`已載入 ${body.count ?? 0} 組`, "");
+    }
+
+    async function saveTokenEditor(kick) {
+      if (tokenEditing) syncTokenEditFromDom();
+      else alignEntriesToStatusOrder();
+      const entries = tokenEditEntries.filter(e => e.token);
+      const res = await fetch("/api/tokens/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entries, kick: !!kick }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      tokenEditEntries = (body.entries || []).map(e => ({ name: e.name || "", token: e.token || "" }));
+      tokenEditing = false;
+      tokenOrderDirty = false;
+      setTokenEditMsg(body.message || "已儲存", body.ok ? "ok" : "bad");
+      await load(true);
+      return body;
+    }
+
     async function load(refreshTokens = false) {
       try {
         const url = refreshTokens ? "/api/summary?refresh=1" : "/api/summary";
         const res = await fetch(url, { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         render(await res.json());
+        if (invQuery) await loadInventory({ reset: true });
       } catch (e) {
         const el = document.getElementById("error");
         el.hidden = false;
-        el.textContent = `無法連線儀表板伺服器。請在專案根目錄執行：python3 scripts/fetch_status_server.py （${e.message}）`;
+        el.textContent = `無法連線儀表板伺服器。請執行：./scripts/open_fetch_dashboard.sh （${e.message}）`;
       }
     }
 
@@ -226,6 +679,30 @@
         timer = setInterval(() => load(false), 10000);
       }
     }
+
+    let searchTimer;
+    document.getElementById("invSearch").addEventListener("input", (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(async () => {
+        invQuery = e.target.value.trim();
+        try { await loadInventory({ reset: true }); }
+        catch (err) { console.error(err); }
+      }, 250);
+    });
+    document.getElementById("invRefreshBtn").onclick = async () => {
+      try { await loadInventory({ reset: true }); }
+      catch (e) {
+        document.getElementById("error").hidden = false;
+        document.getElementById("error").textContent = e.message;
+      }
+    };
+    document.getElementById("invMoreBtn").onclick = async () => {
+      try { await loadInventory({ append: true }); }
+      catch (e) {
+        document.getElementById("error").hidden = false;
+        document.getElementById("error").textContent = e.message;
+      }
+    };
 
     document.getElementById("refreshBtn").onclick = () => load(false);
     document.getElementById("probeBtn").onclick = () => load(true);
@@ -240,16 +717,87 @@
       }
     };
     document.getElementById("stopBtn").onclick = async () => {
-      try {
-        await postAction("/api/fetch/stop");
-      } catch (e) {
+      try { await postAction("/api/fetch/stop"); }
+      catch (e) {
         document.getElementById("error").hidden = false;
         document.getElementById("error").textContent = e.message;
       }
     };
+    document.getElementById("kickBtn").onclick = async () => {
+      const btn = document.getElementById("kickBtn");
+      btn.disabled = true;
+      try {
+        const body = await postAction("/api/fetch/kick");
+        document.getElementById("procHint").hidden = false;
+        document.getElementById("procHint").textContent = body.message || "已強制續抓";
+        await loadInventory({ reset: true });
+      } catch (e) {
+        document.getElementById("error").hidden = false;
+        document.getElementById("error").textContent = e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    };
+    document.getElementById("clearLogBtn").onclick = async () => {
+      const btn = document.getElementById("clearLogBtn");
+      btn.disabled = true;
+      try {
+        const body = await postAction("/api/log/clear");
+        document.getElementById("logBox").innerHTML =
+          `<div class="side-meta">${esc(body.message || "已清除 log")}</div>`;
+      } catch (e) {
+        document.getElementById("error").hidden = false;
+        document.getElementById("error").textContent = e.message;
+      } finally {
+        btn.disabled = false;
+      }
+    };
     document.getElementById("autoRefresh").onchange = schedule;
 
+    document.getElementById("tokenAddBtn").onclick = async () => {
+      try {
+        if (!tokenEditing) await ensureTokenEntriesLoaded();
+        else syncTokenEditFromDom();
+        tokenEditEntries.push({ name: "", token: "" });
+        focusTokenIndex = tokenEditEntries.length - 1;
+        tokenEditing = true;
+        setTokenEditMsg("編輯中：新增後請填寫帳號與 Token，再按儲存。", "");
+        renderTokenTable();
+      } catch (e) {
+        setTokenEditMsg(e.message, "bad");
+      }
+    };
+    document.getElementById("tokenReloadBtn").onclick = async () => {
+      try {
+        await loadTokenEditor({ keepEditing: false });
+        await load(true);
+      } catch (e) {
+        setTokenEditMsg(e.message, "bad");
+      }
+    };
+    document.getElementById("tokenSaveBtn").onclick = async () => {
+      const btn = document.getElementById("tokenSaveBtn");
+      btn.disabled = true;
+      try { await saveTokenEditor(false); }
+      catch (e) { setTokenEditMsg(e.message, "bad"); }
+      finally { btn.disabled = false; }
+    };
+    document.getElementById("tokenSaveKickBtn").onclick = async () => {
+      const btn = document.getElementById("tokenSaveKickBtn");
+      btn.disabled = true;
+      try {
+        await saveTokenEditor(true);
+        document.getElementById("procHint").hidden = false;
+        document.getElementById("procHint").textContent = "Token 已儲存並強制續抓。";
+      } catch (e) {
+        setTokenEditMsg(e.message, "bad");
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
     load(false);
+    loadTokenEditor().catch(e => setTokenEditMsg(e.message, "bad"));
     schedule();
   </script>
 </body>

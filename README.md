@@ -40,9 +40,19 @@ tools/                   # 抓取腳本 + 本機儀表板（無 token）
 docs/                    # GitHub Pages
 ```
 
-## GitHub Actions
+## GitHub Actions（雲端自動抓取）
 
-可选手動執行 **Update MT offline data**（需 repo Secret `FINMIND_TOKENS`）。  
-初次 3000+ 檔建議**本機**跑完再 push；Actions 有 6 小時上限。
+公開 repo 已設定 workflow **Update MT offline data**：
+
+- **手動**：Actions 頁 → Run workflow
+- **排程**：每 6 小時自動續跑（單次 soft budget ~5 小時，避免硬逾時來不及 commit）
+- **Secret**（Settings → Secrets）：
+  - `FINMIND_TOKENS_JSON`：JSON 陣列 `[{"name":"…","token":"…"}, …]`（建議）
+  - 或 `FINMIND_TOKENS`：逗號分隔 JWT
+
+進度寫回本 repo 的 `metrics/` + `status.json`；App 仍從 jsDelivr / Pages 下載。
+
+初次全市場建議先推送本機進度再靠 Actions 續跑；純從零在 CI 跑需多次排程才能齊。
+
 
 資料來源：[FinMind](https://finmindtrade.com/)

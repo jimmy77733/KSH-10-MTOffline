@@ -50,7 +50,9 @@ SPARK_COUNT = 20
 MAX_WORKERS = 10
 TOKEN_HOURLY_LIMIT = 580
 TOKEN_COOLDOWN_SEC = 60
-QUOTA_COOLDOWN_SEC = 600
+# 402/403：硬上限，絕不再用「等到下一整點」（曾誤判睡近 1 小時）
+QUOTA_COOLDOWN_BASE_SEC = 60
+QUOTA_COOLDOWN_MAX_SEC = 120
 STALL_ROUNDS_LIMIT = 8
 TOKEN_FILE = os.path.join(TOOLS_DIR, "finmind_tokens.local.json")
 TOKEN_FILE_TXT = os.path.join(TOOLS_DIR, "finmind_tokens.local.txt")
@@ -111,6 +113,7 @@ class TokenPool:
         self.lock = threading.Lock()
         self.cursor = 0
         self.hard_fail_streak = [0] * len(tokens)
+        self.quota_streak = [0] * len(tokens)
         self.hourly_hits = [[] for _ in tokens]
         self.names = [f"Token-{i}" for i in range(len(tokens))]
 
@@ -121,11 +124,6 @@ class TokenPool:
     def _hourly_count(self, idx, now):
         self._prune_hourly(idx, now)
         return len(self.hourly_hits[idx])
-
-    def _seconds_until_hour_reset(self, now):
-        dt = datetime.fromtimestamp(now)
-        next_hour = (dt.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1))
-        return max(30.0, (next_hour.timestamp() - now))
 
     def acquire(self, wait_timeout=900):
         deadline = time.time() + wait_timeout
@@ -143,38 +141,52 @@ class TokenPool:
                         best_wait = wait if best_wait is None else min(best_wait, wait)
                         continue
                     if self._hourly_count(idx, now) >= TOKEN_HOURLY_LIMIT:
-                        wait = self._seconds_until_hour_reset(now)
-                        until = now + wait
+                        # 本地預估達上限：短冷卻，讓其他組先跑
+                        until = now + QUOTA_COOLDOWN_BASE_SEC
                         if until > self.cooldown_until[idx]:
                             self.cooldown_until[idx] = until
-                        best_wait = wait if best_wait is None else min(best_wait, wait)
+                        best_wait = QUOTA_COOLDOWN_BASE_SEC if best_wait is None else min(best_wait, QUOTA_COOLDOWN_BASE_SEC)
                         continue
                     usage = self._hourly_count(idx, now)
-                    candidates.append((usage, idx))
+                    candidates.append((usage, self.quota_streak[idx], idx))
                 if candidates:
-                    candidates.sort(key=lambda item: item[0])
-                    idx = candidates[0][1]
+                    # 優先：用量少、近期少被 402
+                    candidates.sort(key=lambda item: (item[0], item[1], item[2]))
+                    idx = candidates[0][2]
                     self.cursor = (idx + 1) % n
                     return idx, self.tokens[idx]
             if time.time() >= deadline:
                 raise FetchFailed("all tokens still cooling or hourly limit reached")
-            time.sleep(max(1.0, min(best_wait or 5.0, 30.0)))
+            # 全部冷卻時最多睡 5 秒再掃一次，避免誤判長睡
+            time.sleep(max(1.0, min(best_wait or 5.0, 5.0)))
 
     def block(self, idx, seconds=TOKEN_COOLDOWN_SEC):
+        """一般冷卻；秒數硬上限 10 分鐘，防止誤設成近 1 小時。"""
+        seconds = min(float(seconds), 600.0)
         with self.lock:
             until = time.time() + seconds
             if until > self.cooldown_until[idx]:
                 self.cooldown_until[idx] = until
             print(f"[!] {self.names[idx]} cooling {seconds:.0f}s")
 
-    def block_until_hour_reset(self, idx):
-        wait = self._seconds_until_hour_reset(time.time())
-        print(f"[!] {self.names[idx]} hourly quota hit, wait {wait:.0f}s")
-        self.block(idx, wait)
+    def block_quota(self, idx):
+        """
+        FinMind 402/403：只冷卻這一組並立刻換下一組。
+        遞增 60→90→120 秒，硬上限 120 秒。絕不用「等到下一整點」。
+        """
+        with self.lock:
+            self.quota_streak[idx] += 1
+            streak = self.quota_streak[idx]
+            wait = min(QUOTA_COOLDOWN_BASE_SEC + (streak - 1) * 30, QUOTA_COOLDOWN_MAX_SEC)
+            until = time.time() + wait
+            if until > self.cooldown_until[idx]:
+                self.cooldown_until[idx] = until
+            print(f"[!] {self.names[idx]} quota 402/403 ×{streak}, cool {wait:.0f}s → rotate")
 
     def note_ok(self, idx):
         with self.lock:
             self.hard_fail_streak[idx] = 0
+            self.quota_streak[idx] = 0
             self.hourly_hits[idx].append(time.time())
 
     def note_hard_fail(self, idx, illegal=False):
@@ -227,7 +239,7 @@ def fetch_data(dataset, data_id, start=None, end=None):
                 return payload.get("data") or []
             if is_quota_status(status):
                 print(f"[{POOL.names[idx]} status {status} on {dataset}/{data_id}]")
-                POOL.block_until_hour_reset(idx)
+                POOL.block_quota(idx)
                 last_error = f"status {status}"
                 continue
             print(f"[!] API {status} {payload.get('msg')} for {dataset}/{data_id}")
@@ -249,9 +261,11 @@ def fetch_data(dataset, data_id, start=None, end=None):
             if exc.code in (401, 402, 403, 429):
                 print(f"[{POOL.names[idx]} HTTP {exc.code} on {dataset}/{data_id}]")
                 if exc.code in (402, 403):
-                    POOL.block_until_hour_reset(idx)
+                    POOL.block_quota(idx)
+                elif exc.code == 429:
+                    POOL.block(idx, 90)
                 else:
-                    POOL.block(idx, 90 if exc.code == 429 else QUOTA_COOLDOWN_SEC)
+                    POOL.block(idx, 120)
                 last_error = f"HTTP {exc.code}"
                 continue
             last_error = f"HTTP {exc.code}"

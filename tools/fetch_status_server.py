@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import signal
 import subprocess
 import threading
@@ -15,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 TOOLS = Path(__file__).resolve().parent
 REPO_ROOT = Path(os.environ.get("MT_REPO_ROOT", TOOLS.parent))
@@ -32,7 +34,7 @@ LOG_FILE = SCRIPTS / "fetch_run.log"
 FETCH_SCRIPT = SCRIPTS / "fetch_historical_data.py"
 PID_FILE = SCRIPTS / "fetch.pid"
 TOKEN_FILE = SCRIPTS / "finmind_tokens.local.json"
-HTML_FILE = TOOLS / "fetch_dashboard.html"
+HTML_FILE = SCRIPTS / "fetch_dashboard.html"
 
 PORT = int(os.environ.get("FETCH_DASHBOARD_PORT", "8765"))
 TOKEN_CACHE_SEC = 45
@@ -43,6 +45,322 @@ PROBE_URL = (
 
 _token_cache: dict = {"at": 0.0, "items": []}
 _cache_lock = threading.Lock()
+_inventory_cache: dict = {"at": 0.0, "payload": None}
+INVENTORY_CACHE_SEC = 8
+
+DATASET_ZH = {
+    "TaiwanStockPrice": "股價",
+    "TaiwanStockInstitutionalInvestorsBuySell": "法人買賣超",
+    "TaiwanStockDayTrading": "當沖",
+    "TaiwanStockMarginPurchaseShortSale": "融資券",
+    "TaiwanFuturesDaily": "期貨日線",
+    "TaiwanStockInfo": "股票清單",
+}
+
+SEG_ZH = {
+    "price": "價量",
+    "inst": "法人",
+    "day": "當沖",
+    "margin": "融資",
+    "schema": "格式",
+}
+
+
+def asset_name_map() -> dict[str, str]:
+    assets = read_json(DIST / "assets.json") or []
+    if not isinstance(assets, list):
+        assets = []
+    out = {}
+    for row in assets:
+        if isinstance(row, dict) and row.get("id"):
+            out[str(row["id"])] = str(row.get("name") or row["id"])
+    return out
+
+
+def humanize_log_line(line: str, names: dict[str, str] | None = None) -> str:
+    """把常見英文 log 轉成可讀中文（保留原意）。"""
+    s = line.strip()
+    if not s:
+        return ""
+    names = names or {}
+
+    m = re.search(r"=== (.+) (?:dashboard |fetch )?start ===", s)
+    if m:
+        return f"▶ 開始抓取（{m.group(1)}）"
+
+    m = re.search(r"Loaded (\d+) FinMind tokens, workers=(\d+), hourly cap=(\d+)/token", s)
+    if m:
+        return f"已載入 {m.group(1)} 組 Token，並行 {m.group(2)} 路，每組每小時上限約 {m.group(3)} 次"
+
+    m = re.search(r"Fetching data from (\S+) to (\S+)", s)
+    if m:
+        return f"抓取區間：{m.group(1)} ～ {m.group(2)}"
+
+    if "Using cached universe" in s:
+        m = re.search(r"\((\d+) assets\)", s)
+        n = m.group(1) if m else "?"
+        return f"使用快取標的清單（{n} 檔），略過 TaiwanStockInfo"
+
+    m = re.search(r"Total target universe: (\d+) assets", s)
+    if m:
+        return f"目標宇宙：共 {m.group(1)} 個標的"
+
+    m = re.search(r"Wrote dist stock_directory\.json \((\d+) entries\)", s)
+    if m:
+        return f"已寫入股票目錄（{m.group(1)} 筆）"
+
+    m = re.search(r"Bundle seed: (\d+) files", s)
+    if m:
+        return f"已同步 App 內建 seed：{m.group(1)} 檔"
+
+    m = re.search(r"Calendar (\S+) -> (\S+) \((\d+) sessions\)", s)
+    if m:
+        return f"交易日曆：{m.group(1)} → {m.group(2)}（{m.group(3)} 個交易日）"
+
+    m = re.search(
+        r"== round (\d+) complete (\d+)/(\d+) \(([\d.]+)%\) delisted/short (\d+) missing (\d+)",
+        s,
+    )
+    if m:
+        return (
+            f"第 {m.group(1)} 輪驗證：完成 {m.group(2)}／{m.group(3)}（{m.group(4)}%），"
+            f"下市／極短 {m.group(5)}，尚缺 {m.group(6)}"
+        )
+
+    m = re.search(r"\[(\d+)/(\d+)\] saved (\S+) segs=([^\s]+) days=(\d+)", s)
+    if m:
+        aid = m.group(3)
+        name = names.get(aid, aid)
+        segs = "、".join(SEG_ZH.get(x, x) for x in m.group(4).split(",") if x)
+        return f"[{m.group(1)}/{m.group(2)}] 已寫入 {name}（{aid}）· {segs} · {m.group(5)} 日"
+
+    m = re.search(r"\[(\d+)/(\d+)\] FAIL (\S+): (.+)", s)
+    if m:
+        aid = m.group(3)
+        name = names.get(aid, aid)
+        return f"[{m.group(1)}/{m.group(2)}] 失敗 {name}（{aid}）：{m.group(4)}"
+
+    m = re.search(r"\[(Token-\d+) HTTP (\d+) on ([^/]+)/([^\]]+)\]", s)
+    if m:
+        ds = DATASET_ZH.get(m.group(3), m.group(3))
+        aid = m.group(4)
+        name = names.get(aid, aid) if aid not in ("None", "") else ""
+        who = f"{name}（{aid}）" if name and aid != "None" else aid
+        code = m.group(2)
+        if code == "402":
+            tip = "額度滿"
+        elif code == "403":
+            tip = "被拒絕／額度"
+        elif code == "400":
+            tip = "請求錯誤／Token 異常"
+        else:
+            tip = f"HTTP {code}"
+        return f"[{m.group(1)}] {tip}（{code}）· {ds} · {who}"
+
+    m = re.search(r"\[(Token-\d+) status (\d+) on ([^/]+)/([^\]]+)\]", s)
+    if m:
+        ds = DATASET_ZH.get(m.group(3), m.group(3))
+        aid = m.group(4)
+        name = names.get(aid, aid)
+        return f"[{m.group(1)}] API 狀態 {m.group(2)} · {ds} · {name}（{aid}）"
+
+    m = re.search(r"\[!\] (Token-\d+) quota 402/403 ×(\d+), cool (\d+)s", s)
+    if m:
+        return f"[{m.group(1)}] 額度滿，冷卻 {m.group(3)} 秒後換下一組（連續第 {m.group(2)} 次）"
+
+    m = re.search(r"\[!\] (Token-\d+) cooling (\d+)s", s)
+    if m:
+        return f"[{m.group(1)}] 冷卻中 {m.group(2)} 秒"
+
+    m = re.search(r"\[!\] (Token-\d+) invalid token", s)
+    if m:
+        return f"[{m.group(1)}] Token 無效，已暫停 24 小時"
+
+    if "COMPLETE" in s and "assets verified" in s:
+        return f"✅ 全部完成：{s}"
+
+    if s.startswith("[!]") or s.startswith("["):
+        return s
+    return s
+
+
+def humanize_log_lines(lines: list[str]) -> list[str]:
+    names = asset_name_map()
+    out = []
+    for line in lines:
+        # 同一行可能黏了多則訊息
+        parts = re.split(r"(?=\[Token-)|(?=\[!\])|(?=\[\d+/\d+\])", line)
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+            out.append(humanize_log_line(part, names))
+    return out[-80:]
+
+
+def verify_metric_file(path: Path, expected_id: str) -> dict:
+    """輕量驗證單檔：不展開每日明細。"""
+    try:
+        size = path.stat().st_size
+    except OSError:
+        return {"ok": False, "label": "無法讀取", "tone": "bad", "rows": 0, "first": None, "last": None, "bytes": 0}
+
+    if size <= 2:
+        return {"ok": False, "label": "空檔", "tone": "bad", "rows": 0, "first": None, "last": None, "bytes": size}
+
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {"ok": False, "label": "JSON 損壞", "tone": "bad", "rows": 0, "first": None, "last": None, "bytes": size}
+
+    if not isinstance(rows, list) or not rows:
+        return {"ok": False, "label": "無資料", "tone": "bad", "rows": 0, "first": None, "last": None, "bytes": size}
+
+    first = rows[0] if isinstance(rows[0], dict) else {}
+    last = rows[-1] if isinstance(rows[-1], dict) else {}
+    first_date = first.get("date")
+    last_date = last.get("date")
+    closes = sum(1 for r in rows if isinstance(r, dict) and r.get("close") is not None)
+    inst = any(isinstance(r, dict) and r.get("instNet") is not None for r in rows[-40:])
+    mismatch = sum(1 for r in rows if isinstance(r, dict) and r.get("assetId") not in (None, expected_id))
+
+    if mismatch:
+        return {
+            "ok": False,
+            "label": "代號不符",
+            "tone": "bad",
+            "rows": len(rows),
+            "first": first_date,
+            "last": last_date,
+            "bytes": size,
+            "closes": closes,
+        }
+    if closes == 0:
+        return {
+            "ok": False,
+            "label": "無收盤價",
+            "tone": "bad",
+            "rows": len(rows),
+            "first": first_date,
+            "last": last_date,
+            "bytes": size,
+            "closes": 0,
+        }
+
+    extras = []
+    if inst:
+        extras.append("法人")
+    # day/margin sample
+    if any(isinstance(r, dict) and r.get("dayVol") is not None for r in rows[-40:]):
+        extras.append("當沖")
+    if any(isinstance(r, dict) and r.get("marginDelta") is not None for r in rows[-40:]):
+        extras.append("融資")
+
+    if len(rows) >= 200 and closes >= max(1, int(len(rows) * 0.7)):
+        label = "價量齊" + (("＋" + "／".join(extras)) if extras else "")
+        tone = "ok"
+        ok = True
+    else:
+        label = f"資料偏短（{len(rows)} 日）"
+        tone = "warn"
+        ok = True  # 下市／極短也算有檔
+
+    return {
+        "ok": ok,
+        "label": label,
+        "tone": tone,
+        "rows": len(rows),
+        "first": first_date,
+        "last": last_date,
+        "bytes": size,
+        "closes": closes,
+        "extras": extras,
+    }
+
+
+def build_inventory(limit: int = 80, offset: int = 0, q: str = "") -> dict:
+    now = time.time()
+    with _cache_lock:
+        cached = _inventory_cache.get("payload")
+        if cached and now - _inventory_cache["at"] < INVENTORY_CACHE_SEC and not q and offset == 0 and limit >= 80:
+            # 僅無篩選的首頁快取
+            items = cached["items"]
+            summary = cached["summary"]
+            page = items[offset: offset + limit]
+            return {
+                "generatedAt": datetime.now().isoformat(timespec="seconds"),
+                "summary": summary,
+                "total": len(items),
+                "offset": offset,
+                "limit": limit,
+                "items": page,
+                "cached": True,
+            }
+
+    names = asset_name_map()
+    assets = read_json(DIST / "assets.json") or []
+    type_map = {
+        str(a["id"]): a.get("type", "stock")
+        for a in assets
+        if isinstance(a, dict) and a.get("id")
+    } if isinstance(assets, list) else {}
+
+    files = []
+    if METRICS.exists():
+        for path in METRICS.glob("*.json"):
+            try:
+                mtime = path.stat().st_mtime
+            except OSError:
+                continue
+            files.append((mtime, path))
+    files.sort(key=lambda x: x[0], reverse=True)  # 最近寫入在前
+
+    items = []
+    ok_n = warn_n = bad_n = 0
+    for mtime, path in files:
+        aid = path.stem
+        name = names.get(aid, aid)
+        if q and q.lower() not in aid.lower() and q.lower() not in name.lower():
+            continue
+        verified = verify_metric_file(path, aid)
+        tone = verified["tone"]
+        if tone == "ok":
+            ok_n += 1
+        elif tone == "warn":
+            warn_n += 1
+        else:
+            bad_n += 1
+        items.append({
+            "id": aid,
+            "name": name,
+            "type": type_map.get(aid, "stock"),
+            "mtime": datetime.fromtimestamp(mtime).isoformat(timespec="seconds"),
+            **verified,
+        })
+
+    summary = {
+        "files": len(files),
+        "listed": len(items),
+        "ok": ok_n,
+        "warn": warn_n,
+        "bad": bad_n,
+    }
+
+    if not q:
+        with _cache_lock:
+            _inventory_cache["at"] = now
+            _inventory_cache["payload"] = {"items": items, "summary": summary}
+
+    page = items[offset: offset + limit]
+    return {
+        "generatedAt": datetime.now().isoformat(timespec="seconds"),
+        "summary": summary,
+        "total": len(items),
+        "offset": offset,
+        "limit": limit,
+        "items": page,
+        "cached": False,
+    }
 
 
 def read_json(path: Path):
@@ -92,27 +410,41 @@ def process_alive() -> tuple[bool, int | None, str | None]:
     return False, None, None
 
 
+def clear_fetch_log() -> dict:
+    """清空抓取 log（fetch_run.log）。執行中行程若以 append 寫入，後續仍可繼續寫。"""
+    LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    LOG_FILE.write_text(f"=== {stamp} log cleared ===\n", encoding="utf-8")
+    return {"ok": True, "message": "已清除 log", "path": str(LOG_FILE.name)}
+
+
 def start_fetch() -> dict:
     running, pid, _ = process_alive()
     if running:
         return {"ok": True, "alreadyRunning": True, "pid": pid, "message": "抓取已在執行中"}
 
     LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(LOG_FILE, "a", encoding="utf-8") as log_handle:
-        log_handle.write(f"\n=== {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} dashboard start ===\n")
-        log_handle.flush()
-        proc = subprocess.Popen(
-            ["python3", "-u", str(FETCH_SCRIPT)],
-            cwd=str(REPO_ROOT),
-            stdout=log_handle,
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
-        )
+    stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_handle = open(LOG_FILE, "a", encoding="utf-8")
+    log_handle.write(f"\n=== {stamp} dashboard start ===\n")
+    log_handle.flush()
+    proc = subprocess.Popen(
+        ["python3", "-u", str(FETCH_SCRIPT)],
+        cwd=str(REPO_ROOT),
+        stdout=log_handle,
+        stderr=subprocess.STDOUT,
+        start_new_session=True,
+    )
+    # 子行程繼承 fd；父行程可關閉自己的副本
+    try:
+        log_handle.close()
+    except Exception:
+        pass
     PID_FILE.write_text(str(proc.pid))
     return {"ok": True, "alreadyRunning": False, "pid": proc.pid, "message": "已啟動背景抓取"}
 
 
-def stop_fetch() -> dict:
+def stop_fetch(force: bool = False) -> dict:
     pid = find_fetch_pid()
     if not pid:
         return {"ok": True, "stopped": False, "message": "沒有執行中的抓取行程"}
@@ -120,7 +452,53 @@ def stop_fetch() -> dict:
         os.kill(pid, signal.SIGTERM)
     except OSError as exc:
         return {"ok": False, "message": str(exc)}
+    for _ in range(10):
+        time.sleep(0.1)
+        if find_fetch_pid() is None:
+            break
+    else:
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except OSError:
+            pass
+        time.sleep(0.2)
+    # 清掉殘留 pid 檔
+    if find_fetch_pid() is None and PID_FILE.exists():
+        try:
+            PID_FILE.unlink()
+        except OSError:
+            pass
     return {"ok": True, "stopped": True, "pid": pid, "message": "已送出停止訊號"}
+
+
+def kick_fetch() -> dict:
+    """手動測試：停掉舊行程並立刻重啟，清掉記憶體內冷卻，立刻再打 API。"""
+    stopped = stop_fetch(force=True)
+    # 再保險掃一次
+    leftover = find_fetch_pid()
+    if leftover:
+        try:
+            os.kill(leftover, signal.SIGKILL)
+        except OSError:
+            pass
+        time.sleep(0.2)
+    started = start_fetch()
+    if started.get("alreadyRunning"):
+        # 極少數情況：stop 失敗仍顯示 running → 強制再殺一次
+        stop_fetch(force=True)
+        time.sleep(0.3)
+        started = start_fetch()
+    return {
+        "ok": bool(started.get("ok")) and not started.get("alreadyRunning", False) or bool(started.get("pid")),
+        "stopped": stopped.get("stopped", False),
+        "oldPid": stopped.get("pid"),
+        "pid": started.get("pid"),
+        "message": (
+            f"已強制續抓（清冷卻）。"
+            f"{'停掉 PID ' + str(stopped['pid']) + ' → ' if stopped.get('stopped') else ''}"
+            f"新 PID {started.get('pid')}。若仍 402/403 會再進短冷卻。"
+        ),
+    }
 
 
 def _kill0(pid: int) -> bool:
@@ -152,10 +530,70 @@ def load_token_entries() -> list[dict]:
     out = []
     for item in raw:
         if isinstance(item, dict) and item.get("token"):
-            out.append({"name": item.get("name") or "token", "token": item["token"]})
+            out.append({"name": item.get("name") or "token", "token": str(item["token"]).strip()})
         elif isinstance(item, str) and item.strip():
             out.append({"name": "token", "token": item.strip()})
     return out
+
+
+def save_token_entries(entries: list[dict]) -> dict:
+    """寫入 finmind_tokens.local.json（僅本機儀表板）。"""
+    cleaned = []
+    seen = set()
+    for item in entries:
+        if not isinstance(item, dict):
+            continue
+        name = str(item.get("name") or "").strip() or "token"
+        token = str(item.get("token") or "").strip()
+        if not token:
+            continue
+        if token in seen:
+            continue
+        seen.add(token)
+        cleaned.append({"name": name, "token": token})
+
+    TOKEN_FILE.parent.mkdir(parents=True, exist_ok=True)
+    TOKEN_FILE.write_text(
+        json.dumps(cleaned, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    with _cache_lock:
+        _token_cache["at"] = 0.0
+        _token_cache["items"] = []
+    return {
+        "ok": True,
+        "count": len(cleaned),
+        "path": str(TOKEN_FILE.name),
+        "message": f"已儲存 {len(cleaned)} 組 Token 到 {TOKEN_FILE.name}。抓取行程需「強制續抓」才會載入新 Token。",
+        "entries": [
+            {"index": i, "name": e["name"], "token": e["token"], "tail": e["token"][-8:]}
+            for i, e in enumerate(cleaned)
+        ],
+    }
+
+
+def list_tokens_for_edit() -> dict:
+    entries = load_token_entries()
+    return {
+        "ok": True,
+        "path": str(TOKEN_FILE.name),
+        "count": len(entries),
+        "entries": [
+            {"index": i, "name": e["name"], "token": e["token"], "tail": e["token"][-8:]}
+            for i, e in enumerate(entries)
+        ],
+    }
+
+
+def _read_json_body(handler: BaseHTTPRequestHandler) -> dict | list | None:
+    length = int(handler.headers.get("Content-Length") or 0)
+    if length <= 0:
+        return None
+    raw = handler.rfile.read(length)
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except Exception:
+        return None
 
 
 def probe_token(entry: dict) -> dict:
@@ -273,7 +711,8 @@ def build_summary(refresh_tokens: bool = False) -> dict:
     manifest = read_json(MANIFEST_FILE) or {}
     entries = manifest.get("entries") if isinstance(manifest, dict) else None
     tokens = probe_tokens_cached(force=refresh_tokens)
-    log_tail = tail_lines(LOG_FILE, 60)
+    log_tail = humanize_log_lines(tail_lines(LOG_FILE, 80))
+    inventory = build_inventory(limit=60, offset=0)
 
     complete = status.get("complete") or 0
     universe = status.get("universe") or 0
@@ -314,6 +753,7 @@ def build_summary(refresh_tokens: bool = False) -> dict:
         "tokens": tokens,
         "tokenSummary": token_summary,
         "logTail": log_tail,
+        "inventory": inventory,
         "paths": {
             "log": str(LOG_FILE.relative_to(REPO_ROOT)),
             "status": str(STATUS_FILE.relative_to(REPO_ROOT)),
@@ -346,6 +786,24 @@ class Handler(BaseHTTPRequestHandler):
             payload = build_summary(refresh_tokens=refresh)
             self._send(200, json.dumps(payload, ensure_ascii=False).encode(), "application/json; charset=utf-8")
             return
+        if path == "/api/inventory":
+            qs = parse_qs(urlparse(self.path).query)
+            try:
+                limit = min(int((qs.get("limit") or ["80"])[0]), 500)
+            except ValueError:
+                limit = 80
+            try:
+                offset = max(int((qs.get("offset") or ["0"])[0]), 0)
+            except ValueError:
+                offset = 0
+            q = (qs.get("q") or [""])[0].strip()
+            payload = build_inventory(limit=limit, offset=offset, q=q)
+            self._send(200, json.dumps(payload, ensure_ascii=False).encode(), "application/json; charset=utf-8")
+            return
+        if path == "/api/tokens":
+            payload = list_tokens_for_edit()
+            self._send(200, json.dumps(payload, ensure_ascii=False).encode(), "application/json; charset=utf-8")
+            return
         self._send(404, b"not found", "text/plain; charset=utf-8")
 
     def do_POST(self):
@@ -358,6 +816,31 @@ class Handler(BaseHTTPRequestHandler):
             payload = stop_fetch()
             self._send(200, json.dumps(payload, ensure_ascii=False).encode(), "application/json; charset=utf-8")
             return
+        if path == "/api/fetch/kick":
+            payload = kick_fetch()
+            self._send(200, json.dumps(payload, ensure_ascii=False).encode(), "application/json; charset=utf-8")
+            return
+        if path == "/api/log/clear":
+            payload = clear_fetch_log()
+            self._send(200, json.dumps(payload, ensure_ascii=False).encode(), "application/json; charset=utf-8")
+            return
+        if path == "/api/tokens/save":
+            body = _read_json_body(self)
+            if not isinstance(body, dict) or not isinstance(body.get("entries"), list):
+                self._send(
+                    400,
+                    json.dumps({"ok": False, "message": "請傳送 { entries: [{name, token}, ...] }"}, ensure_ascii=False).encode(),
+                    "application/json; charset=utf-8",
+                )
+                return
+            payload = save_token_entries(body["entries"])
+            kick = bool(body.get("kick"))
+            if kick:
+                kick_result = kick_fetch()
+                payload["kick"] = kick_result
+                payload["message"] = payload["message"] + " " + kick_result.get("message", "")
+            self._send(200, json.dumps(payload, ensure_ascii=False).encode(), "application/json; charset=utf-8")
+            return
         self._send(404, b"not found", "text/plain; charset=utf-8")
 
 
@@ -365,17 +848,22 @@ def main():
     if not HTML_FILE.exists():
         raise SystemExit(f"Missing {HTML_FILE}")
 
+    ThreadingHTTPServer.allow_reuse_address = True
     server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     url = f"http://127.0.0.1:{PORT}/"
-    print(f"MT 離線抓取儀表板 → {url}")
-    print("Ctrl+C 停止（不影響背景 fetch）")
+    print(f"MT 離線抓取儀表板 → {url}", flush=True)
+    print("Ctrl+C 停止（不影響背景 fetch）", flush=True)
 
     def stop(*_):
+        print("\n儀表板關閉中…", flush=True)
         server.shutdown()
 
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    finally:
+        server.server_close()
 
 
 if __name__ == "__main__":
