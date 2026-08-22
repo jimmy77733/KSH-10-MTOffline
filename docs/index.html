@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KSH-10-MTOffline 進度</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0f1115; --card:#171a21; --border:#2a3140; --text:#e8edf5; --muted:#93a0b5; --ok:#3dd68c; --accent:#6ea8fe; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); }
+    .wrap { max-width:900px; margin:0 auto; padding:24px 16px; }
+    h1 { font-size:1.3rem; margin:0 0 6px; }
+    .sub { color:var(--muted); font-size:.9rem; margin-bottom:20px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px; }
+    .big { font-size:1.8rem; font-weight:700; }
+    .bar-wrap { margin-top:10px; background:#0c0e13; border-radius:999px; height:10px; overflow:hidden; }
+    .bar { height:100%; background:linear-gradient(90deg,#4c8bf5,#3dd68c); width:0%; transition:width .4s; }
+    a { color:var(--accent); }
+    .err { color:#ff6b6b; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>MT 台股離線庫進度</h1>
+    <p class="sub">GitHub Pages 唯讀檢視 · 資料來自 repo 內 <code>status.json</code> / <code>manifest.json</code></p>
+    <div id="content" class="card">載入中…</div>
+    <div class="card sub">
+      <p><strong>本機完整功能</strong>（Token 檢測、啟動／停止抓取）請 clone 後執行：</p>
+      <pre style="margin:0;white-space:pre-wrap">git clone https://github.com/jimmy77733/KSH-10-MTOffline.git
+cd KSH-10-MTOffline
+cp tools/finmind_tokens.local.example.json tools/finmind_tokens.local.json
+# 編輯填入 FinMind token（勿 commit）
+./tools/run_fetch_background.sh
+./tools/open_fetch_dashboard.sh</pre>
+      <p style="margin-top:12px">App 下載 manifest：<a id="manifestLink" href="#">manifest.json</a></p>
+    </div>
+  </div>
+  <script>
+    const REPO = "jimmy77733/KSH-10-MTOffline";
+    const BRANCH = "main";
+    const base = `https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}`;
+    document.getElementById("manifestLink").href = `${base}/manifest.json`;
+
+    function fmtBytes(n) {
+      if (!n) return "0 B";
+      const u = ["B","KB","MB","GB"]; let i=0, v=n;
+      while (v>=1024 && i<u.length-1) { v/=1024; i++; }
+      return `${v.toFixed(i?1:0)} ${u[i]}`;
+    }
+
+    async function load() {
+      const el = document.getElementById("content");
+      try {
+        const [st, mf] = await Promise.all([
+          fetch(`${base}/status.json?t=${Date.now()}`).then(r => r.ok ? r.json() : null),
+          fetch(`${base}/manifest.json?t=${Date.now()}`).then(r => r.ok ? r.json() : null),
+        ]);
+        if (!st) throw new Error("尚無 status.json（抓取進行中或未開始）");
+        const pct = st.coveragePercent ?? (st.universe ? (100*st.complete/st.universe).toFixed(2) : 0);
+        const manifestN = mf?.entries?.length ?? 0;
+        const manifestBytes = (mf?.entries || []).reduce((s,e) => s + (e.bytes||0), 0);
+        el.innerHTML = `
+          <div class="big">${st.complete ?? 0} / ${st.universe ?? "?"}</div>
+          <div class="bar-wrap"><div class="bar" style="width:${Math.min(pct,100)}%"></div></div>
+          <p class="sub">${pct}% · 第 ${st.round ?? "—"} 輪 · 缺 ${st.missing ?? "—"} · 更新 ${st.updatedAt ?? "—"}</p>
+          <p class="sub">manifest ${manifestN} 檔 · 約 ${fmtBytes(manifestBytes)} · 版本 ${mf?.version ?? "—"}</p>
+        `;
+      } catch (e) {
+        el.innerHTML = `<p class="err">${e.message}</p>`;
+      }
+    }
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>

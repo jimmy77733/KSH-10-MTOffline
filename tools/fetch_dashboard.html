@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MT 離線抓取儀表板</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --card: #171a21;
+      --border: #2a3140;
+      --text: #e8edf5;
+      --muted: #93a0b5;
+      --ok: #3dd68c;
+      --quota: #f5b942;
+      --bad: #ff6b6b;
+      --warn: #7eb8ff;
+      --accent: #6ea8fe;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+    h1 { font-size: 1.35rem; margin: 0 0 4px; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .card h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+    .big { font-size: 1.6rem; font-weight: 700; }
+    .pill {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    .pill.running { background: rgba(61,214,140,.15); color: var(--ok); }
+    .pill.stopped { background: rgba(255,107,107,.12); color: var(--bad); }
+    .bar-wrap { margin-top: 10px; background: #0c0e13; border-radius: 999px; height: 10px; overflow: hidden; }
+    .bar { height: 100%; background: linear-gradient(90deg, #4c8bf5, #3dd68c); width: 0%; transition: width .4s ease; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .04em; }
+    .chip { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+    .chip.ok { background: rgba(61,214,140,.15); color: var(--ok); }
+    .chip.quota { background: rgba(245,185,66,.15); color: var(--quota); }
+    .chip.bad { background: rgba(255,107,107,.15); color: var(--bad); }
+    .chip.warn { background: rgba(126,184,255,.15); color: var(--warn); }
+    pre {
+      margin: 0;
+      padding: 12px;
+      background: #0c0e13;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      line-height: 1.35;
+      overflow: auto;
+      max-height: 320px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      color: #c5d0e0;
+    }
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    button {
+      background: var(--accent);
+      color: #081018;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button.secondary { background: #2a3140; color: var(--text); }
+    button.danger { background: #8b3a3a; color: #fff; }
+    button.success { background: #2d6a4f; color: #fff; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .hint { color: var(--quota); font-size: 0.85rem; margin: 0 0 14px; }
+    .err { color: var(--bad); margin-top: 12px; }
+    @media (max-width: 640px) { .big { font-size: 1.25rem; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>MT 離線抓取儀表板</h1>
+    <p class="sub">本機監看 <code>dist/offline</code> 進度與 FinMind token 狀態</p>
+
+    <div class="toolbar">
+      <button class="success" id="startBtn">啟動抓取</button>
+      <button class="danger" id="stopBtn">停止抓取</button>
+      <button id="refreshBtn">立即刷新</button>
+      <button class="secondary" id="probeBtn">重測 Token</button>
+      <label class="sub"><input type="checkbox" id="autoRefresh" checked /> 每 10 秒自動刷新</label>
+      <span class="sub" id="updatedAt">—</span>
+    </div>
+    <p class="hint" id="procHint" hidden></p>
+
+    <div id="error" class="err" hidden></div>
+
+    <div class="grid" id="stats"></div>
+
+    <div class="card" style="margin-top:14px">
+      <h2>Token 狀態</h2>
+      <table>
+        <thead>
+          <tr><th>帳號</th><th>狀態</th><th>說明</th><th>尾碼</th></tr>
+        </thead>
+        <tbody id="tokenBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2>最近 Log</h2>
+      <pre id="logBox">載入中…</pre>
+    </div>
+  </div>
+
+  <script>
+    const fmtBytes = (n) => {
+      if (!n) return "0 B";
+      const u = ["B", "KB", "MB", "GB"];
+      let i = 0, v = n;
+      while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+      return `${v.toFixed(i ? 1 : 0)} ${u[i]}`;
+    };
+
+    const chip = (tone, label) => `<span class="chip ${tone}">${label}</span>`;
+
+    function render(data) {
+      const p = data.progress || {};
+      const pct = p.coveragePercent ?? 0;
+      const proc = data.process || {};
+      const m = data.metrics || {};
+      const ts = data.tokenSummary || {};
+      const man = data.manifest || {};
+
+      document.getElementById("stats").innerHTML = `
+        <div class="card">
+          <h2>背景行程</h2>
+          <div class="big">
+            <span class="pill ${proc.running ? "running" : "stopped"}">${proc.running ? "執行中" : "已停止"}</span>
+          </div>
+          <div class="sub">PID ${proc.pid ?? "—"}</div>
+        </div>
+        <div class="card">
+          <h2>驗證完成</h2>
+          <div class="big">${p.complete ?? 0} / ${p.universe ?? 0}</div>
+          <div class="bar-wrap"><div class="bar" style="width:${Math.min(pct, 100)}%"></div></div>
+          <div class="sub">${pct}% · 第 ${p.round ?? "—"} 輪 · 缺 ${p.missing ?? "—"}</div>
+        </div>
+        <div class="card">
+          <h2>磁碟分檔</h2>
+          <div class="big">${m.count ?? 0}</div>
+          <div class="sub">${fmtBytes(m.bytes)} · manifest ${man.entries ?? 0} 筆</div>
+        </div>
+        <div class="card">
+          <h2>Token 概況</h2>
+          <div class="big">${ts.total ?? 0} 組</div>
+          <div class="sub">可用 ${ts.ok ?? 0} · 402 ${ts.quota402 ?? 0} · 403 ${ts.quota403 ?? 0} · 其他額度 ${Math.max(0, (ts.quota ?? 0) - (ts.quota402 ?? 0) - (ts.quota403 ?? 0))} · 無效 ${ts.bad ?? 0}</div>
+        </div>
+      `;
+
+      const tbody = document.getElementById("tokenBody");
+      tbody.innerHTML = (data.tokens || []).map(t => `
+        <tr>
+          <td>${t.name}</td>
+          <td>${chip(t.tone, t.label)}${t.code && t.code !== 200 ? ` <span class="sub">#${t.code}</span>` : ""}</td>
+          <td>${t.msg || ""}</td>
+          <td>…${t.tail || ""}</td>
+        </tr>
+      `).join("") || "<tr><td colspan='4'>尚無 token 設定</td></tr>";
+
+      document.getElementById("logBox").textContent = (data.logTail || []).join("\n") || "(無 log)";
+      document.getElementById("updatedAt").textContent = `更新：${data.generatedAt || "—"}`;
+      document.getElementById("error").hidden = true;
+
+      document.getElementById("startBtn").disabled = !!proc.running;
+      document.getElementById("stopBtn").disabled = !proc.running;
+
+      const hint = document.getElementById("procHint");
+      if (!proc.running && proc.note === "stale_pid") {
+        hint.hidden = false;
+        hint.textContent = "行程已結束（PID 檔仍在）。常見原因：Mac 睡眠、關閉終端機，或 10 組 token 同時額度用盡後等待中被系統清掉。按「啟動抓取」可續跑。";
+      } else if (!proc.running && (ts.quota ?? 0) > 0 && (ts.ok ?? 0) === 0) {
+        hint.hidden = false;
+        hint.textContent = `全部 token 額度用盡（402: ${ts.quota402 ?? 0}、403: ${ts.quota403 ?? 0}）；啟動後會自動等到整點再抓，請保持 Mac 清醒。`;
+      } else {
+        hint.hidden = true;
+      }
+    }
+
+    async function postAction(path) {
+      const res = await fetch(path, { method: "POST" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const body = await res.json();
+      await load(false);
+      return body;
+    }
+
+    async function load(refreshTokens = false) {
+      try {
+        const url = refreshTokens ? "/api/summary?refresh=1" : "/api/summary";
+        const res = await fetch(url, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        render(await res.json());
+      } catch (e) {
+        const el = document.getElementById("error");
+        el.hidden = false;
+        el.textContent = `無法連線儀表板伺服器。請在專案根目錄執行：python3 scripts/fetch_status_server.py （${e.message}）`;
+      }
+    }
+
+    let timer;
+    function schedule() {
+      clearInterval(timer);
+      if (document.getElementById("autoRefresh").checked) {
+        timer = setInterval(() => load(false), 10000);
+      }
+    }
+
+    document.getElementById("refreshBtn").onclick = () => load(false);
+    document.getElementById("probeBtn").onclick = () => load(true);
+    document.getElementById("startBtn").onclick = async () => {
+      try {
+        const body = await postAction("/api/fetch/start");
+        document.getElementById("procHint").hidden = false;
+        document.getElementById("procHint").textContent = body.message || "已啟動";
+      } catch (e) {
+        document.getElementById("error").hidden = false;
+        document.getElementById("error").textContent = e.message;
+      }
+    };
+    document.getElementById("stopBtn").onclick = async () => {
+      try {
+        await postAction("/api/fetch/stop");
+      } catch (e) {
+        document.getElementById("error").hidden = false;
+        document.getElementById("error").textContent = e.message;
+      }
+    };
+    document.getElementById("autoRefresh").onchange = schedule;
+
+    load(false);
+    schedule();
+  </script>
+</body>
+</html>

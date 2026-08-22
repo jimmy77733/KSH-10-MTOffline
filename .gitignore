@@ -1,0 +1,9 @@
+# Token 與本機執行產物（勿 commit）
+tools/finmind_tokens.local.json
+tools/finmind_tokens.local.txt
+tools/fetch.pid
+tools/fetch_run.log
+tools/fetch_dashboard.pid
+tools/fetch_dashboard.log
+dist/
+_taiwan_stock_info.json

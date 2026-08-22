@@ -1,0 +1,50 @@
+name: Update MT offline data
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: "Manual run note"
+        required: false
+        default: "manual"
+
+# 僅手動觸發。初次 3000+ 檔請在本機跑；Actions 有 6h 限制。
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Write tokens
+        env:
+          FINMIND_TOKENS: ${{ secrets.FINMIND_TOKENS }}
+        run: |
+          if [ -z "$FINMIND_TOKENS" ]; then
+            echo "Set repository secret FINMIND_TOKENS (comma-separated JWTs)"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json, os
+          tokens = [t.strip() for t in os.environ["FINMIND_TOKENS"].split(",") if t.strip()]
+          out = [{"name": f"token-{i+1}", "token": t} for i, t in enumerate(tokens)]
+          open("tools/finmind_tokens.local.json", "w").write(json.dumps(out, indent=2))
+          PY
+
+      - name: Fetch (resume)
+        env:
+          MT_OFFLINE_ROOT: ${{ github.workspace }}
+          MT_REPO_ROOT: ${{ github.workspace }}
+        run: python3 -u tools/fetch_historical_data.py
+
+      - name: Commit status if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add status.json manifest.json metrics_index.json assets.json stock_directory.json metrics/ || true
+          git diff --staged --quiet || git commit -m "chore: update offline data [skip ci]"
+          git push || echo "Nothing to push or push failed"
