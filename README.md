@@ -6,9 +6,7 @@
 
 **https://jimmy77733.github.io/KSH-10-MTOffline/**
 
-輸入密碼進入監控畫面（預設 `880702`，僅前端閘門）。可看進度、Actions、資料庫驗證。
-
-Pages 是**靜態唯讀**：無法啟動／停止抓取、編輯 Token、清 log（這些仍用本機 `./tools/open_fetch_dashboard.sh`）。
+公開唯讀監控：進度、Actions、資料庫驗證。
 
 ## App 下載
 
