@@ -182,17 +182,54 @@
     }
 
     async function loadStats() {
-      const [st, mf, idx] = await Promise.all([
+      const [st, mf, idx, assets, tree] = await Promise.all([
         fetchJson(`${RAW}/status.json`).catch(() => fetchJson(`${CDN}/status.json`)),
         fetchJson(`${RAW}/manifest.json`).catch(() => fetchJson(`${CDN}/manifest.json`).catch(() => null)),
         fetchJson(`${RAW}/metrics_index.json`).catch(() => fetchJson(`${CDN}/metrics_index.json`).catch(() => [])),
+        fetchJson(`${RAW}/assets.json`).catch(() => fetchJson(`${CDN}/assets.json`).catch(() => [])),
+        fetch(`https://api.github.com/repos/${REPO}/git/trees/${BRANCH}?recursive=1`, {
+          headers: { Accept: "application/vnd.github+json" },
+        }).then(r => r.ok ? r.json() : null).catch(() => null),
       ]);
       if (!st) throw new Error("尚無 status.json");
 
       const pct = st.coveragePercent ?? (st.universe ? +(100 * st.complete / st.universe).toFixed(2) : 0);
+      const nameMap = Object.fromEntries((assets || []).map(a => [a.id, a]));
+
+      // 實際在 repo 的 metrics 分檔（比過期的 metrics_index 準）
+      const diskIds = new Set();
+      if (tree && Array.isArray(tree.tree)) {
+        for (const t of tree.tree) {
+          const m = /^metrics\/([^/]+)\.json$/.exec(t.path || "");
+          if (m) diskIds.add(m[1]);
+        }
+      }
+      const indexList = Array.isArray(idx) ? idx : [];
+      const indexById = Object.fromEntries(indexList.map(e => [e.id, e]));
+
+      // 目錄優先：磁碟上有的分檔；名稱來自 assets／index
+      const idList = diskIds.size
+        ? [...diskIds].sort()
+        : (indexList.length ? indexList.map(e => e.id) : (assets || []).map(a => a.id));
+
+      invCatalog = idList.map(id => {
+        const fromIdx = indexById[id] || {};
+        const fromAsset = nameMap[id] || {};
+        return {
+          id,
+          name: fromAsset.name || fromIdx.name || id,
+          type: fromAsset.type || fromIdx.type || "",
+          latestDate: fromIdx.latestDate,
+          latestClose: fromIdx.latestClose,
+          onDisk: diskIds.size ? diskIds.has(id) : true,
+        };
+      });
+
+      const diskN = diskIds.size || invCatalog.length;
+      const universeN = st.universe || (assets || []).length || 0;
       const manifestN = mf?.entries?.length ?? 0;
       const manifestBytes = (mf?.entries || []).reduce((s, e) => s + (e.bytes || 0), 0);
-      const indexN = Array.isArray(idx) ? idx.length : 0;
+      const indexN = indexList.length;
 
       // Actions run as "cloud process"
       let actionsRunning = false;
@@ -232,9 +269,9 @@
           <div class="sub">${pct}% · 第 ${st.round ?? "—"} 輪 · 缺 ${st.missing ?? "—"}</div>
         </div>
         <div class="card">
-          <h2>索引／分檔</h2>
-          <div class="big">${indexN}</div>
-          <div class="sub">metrics_index · manifest ${manifestN} · ${fmtBytes(manifestBytes)}</div>
+          <h2>磁碟分檔</h2>
+          <div class="big">${diskN}</div>
+          <div class="sub">宇宙 ${universeN} · index ${indexN} · manifest ${manifestN} · ${fmtBytes(manifestBytes)}</div>
         </div>
         <div class="card">
           <h2>更新時間</h2>
@@ -244,17 +281,6 @@
       `;
       document.getElementById("statusRaw").textContent = JSON.stringify(st, null, 2);
       document.getElementById("updatedAt").textContent = `更新：${new Date().toLocaleString()}`;
-
-      // catalog for inventory
-      const assets = await fetchJson(`${RAW}/assets.json`).catch(() => fetchJson(`${CDN}/assets.json`).catch(() => []));
-      const nameMap = Object.fromEntries((assets || []).map(a => [a.id, a]));
-      invCatalog = (Array.isArray(idx) ? idx : []).map(row => ({
-        id: row.id,
-        name: nameMap[row.id]?.name || row.name || row.id,
-        type: nameMap[row.id]?.type || row.type || "",
-        latestDate: row.latestDate,
-        latestClose: row.latestClose,
-      }));
     }
 
     function filteredCatalog() {
@@ -271,13 +297,12 @@
       invTotal = all.length;
       const slice = all.slice(append ? invOffset : 0, (append ? invOffset : 0) + INV_PAGE);
       document.getElementById("invSummary").textContent =
-        `索引 ${invCatalog.length} 檔 · 本頁驗證 ${slice.length}` + (invQuery ? ` · 篩選 ${invTotal}` : "");
+        `分檔 ${invCatalog.length} · 本頁抽驗 ${slice.length}` + (invQuery ? ` · 篩選 ${invTotal}` : "");
 
       const list = document.getElementById("invList");
       if (!append) list.innerHTML = `<div class="inv-item side-meta">驗證中…</div>`;
 
       const results = [];
-      // 限制並行，避免打爆 CDN
       const concurrency = 6;
       let cursor = 0;
       async function worker() {
@@ -285,15 +310,17 @@
           const i = cursor++;
           const it = slice[i];
           try {
-            const rows = await fetchJson(`${CDN}/metrics/${encodeURIComponent(it.id)}.json`);
+            const rows = await fetchJson(`${CDN}/metrics/${encodeURIComponent(it.id)}.json`).catch(() =>
+              fetchJson(`${RAW}/metrics/${encodeURIComponent(it.id)}.json`)
+            );
             const v = verifyRows(rows, it.id);
             results[i] = { ...it, ...v, bytes: JSON.stringify(rows).length };
           } catch (e) {
-            results[i] = { ...it, tone: "bad", label: "讀取失敗", rows: 0, first: null, last: it.latestDate, bytes: 0 };
+            results[i] = { ...it, tone: "bad", label: "缺檔／讀取失敗", rows: 0, first: null, last: it.latestDate, bytes: 0 };
           }
         }
       }
-      await Promise.all(Array.from({ length: Math.min(concurrency, slice.length) }, () => worker()));
+      await Promise.all(Array.from({ length: Math.min(concurrency, slice.length || 1) }, () => worker()));
 
       const html = results.map(it => `
         <div class="inv-item">
@@ -321,7 +348,7 @@
       const warn = results.filter(r => r.tone === "warn").length;
       const bad = results.filter(r => r.tone === "bad").length;
       document.getElementById("invSummary").textContent =
-        `索引 ${invCatalog.length} · 已驗證 ${invOffset}/${invTotal} · 通過 ${ok} · 警告 ${warn} · 失敗 ${bad}`;
+        `分檔 ${invCatalog.length} · 已抽驗 ${invOffset}/${invTotal} · 本頁 通過 ${ok} · 警告 ${warn} · 失敗 ${bad}`;
     }
 
     async function loadAll() {
