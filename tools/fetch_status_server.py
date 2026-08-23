@@ -184,19 +184,39 @@ def humanize_log_line(line: str, names: dict[str, str] | None = None) -> str:
     return s
 
 
-def humanize_log_lines(lines: list[str]) -> list[str]:
+_TS_RE = re.compile(r"^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]\s*(.*)$")
+_DASH_TS_RE = re.compile(r"^===\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+")
+
+
+def split_log_timestamp(line: str) -> tuple[str, str]:
+    s = line.strip()
+    m = _TS_RE.match(s)
+    if m:
+        return m.group(1), m.group(2)
+    m = _DASH_TS_RE.match(s)
+    if m:
+        return m.group(1), s
+    return "", s
+
+
+def humanize_log_lines(lines: list[str]) -> list[dict]:
     names = asset_name_map()
-    out = []
+    out: list[dict] = []
+    last_ts = ""
     for line in lines:
-        # 同一行可能黏了多則訊息
         parts = re.split(r"(?=\[Token-)|(?=\[!\])|(?=\[\d+/\d+\])", line)
         for part in parts:
             part = part.strip()
             if not part:
                 continue
-            out.append(humanize_log_line(part, names))
+            at, body = split_log_timestamp(part)
+            if at:
+                last_ts = at
+            text = humanize_log_line(body or part, names)
+            if not text:
+                continue
+            out.append({"at": at or last_ts, "text": text})
     return out[-80:]
-
 
 def verify_metric_file(path: Path, expected_id: str) -> dict:
     """輕量驗證單檔：不展開每日明細。"""
@@ -688,20 +708,70 @@ def probe_tokens_cached(force: bool = False) -> list[dict]:
     now = time.time()
     with _cache_lock:
         if not force and _token_cache["items"] and now - _token_cache["at"] < TOKEN_CACHE_SEC:
-            return _token_cache["items"]
+            cached = [dict(x) for x in _token_cache["items"]]
+            return apply_log_quota_overlay(cached)
 
     entries = load_token_entries()
-    items = []
+    items: list[dict] = []
     if entries:
         with ThreadPoolExecutor(max_workers=min(10, len(entries))) as pool:
             futures = [pool.submit(probe_token, e) for e in entries]
-            for fut in as_completed(futures):
-                items.append(fut.result())
-        items.sort(key=lambda x: x["name"])
+            # 保持與 finmind_tokens.local.json / Token-N 相同順序（勿依 name 排序）
+            items = [fut.result() for fut in futures]
 
     with _cache_lock:
         _token_cache["at"] = now
-        _token_cache["items"] = items
+        _token_cache["items"] = [dict(x) for x in items]
+    return apply_log_quota_overlay([dict(x) for x in items])
+
+
+def recent_log_quota_hits(max_lines: int = 400) -> dict[int, int]:
+    """
+    從最近 log（自上次 Loaded tokens 起）解析 Token-N → 402/403。
+    抓取行程實際撞到的額度，比單獨 probe 快取更準。
+    """
+    lines = tail_lines(LOG_FILE, max_lines)
+    if not lines:
+        return {}
+    start = 0
+    for i, line in enumerate(lines):
+        if "Loaded " in line and "FinMind tokens" in line:
+            start = i
+    hits: dict[int, int] = {}
+    for line in lines[start:]:
+        for m in re.finditer(r"Token-(\d+)\s+HTTP\s+(402|403)\b", line):
+            hits[int(m.group(1))] = int(m.group(2))
+        for m in re.finditer(r"Token-(\d+)\s+status\s+(402|403)\b", line):
+            hits[int(m.group(1))] = int(m.group(2))
+        for m in re.finditer(r"Token-(\d+)\s+quota\s+402/403", line):
+            hits.setdefault(int(m.group(1)), 402)
+    return hits
+
+
+def apply_log_quota_overlay(items: list[dict]) -> list[dict]:
+    """若抓取 log 已出現 402/403，覆蓋仍顯示「可用」的 probe 快取。"""
+    if not items:
+        return items
+    hits = recent_log_quota_hits()
+    if not hits:
+        return items
+    for idx, code in hits.items():
+        if idx < 0 or idx >= len(items):
+            continue
+        cur = items[idx]
+        if cur.get("category") == "quota" and cur.get("code") in (402, 403):
+            continue
+        label, tone, category = classify_token_status(code, "reach the upper limit")
+        items[idx] = {
+            **cur,
+            "status": code,
+            "code": code,
+            "category": category,
+            "label": label,
+            "tone": tone,
+            "msg": format_token_msg(code, "reach the upper limit") + "（依抓取 log）",
+            "fromLog": True,
+        }
     return items
 
 

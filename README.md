@@ -6,7 +6,9 @@
 
 **https://jimmy77733.github.io/KSH-10-MTOffline/**
 
-唯讀檢視 `status.json` / `manifest.json` 進度（約 30 秒刷新）。
+輸入密碼進入監控畫面（預設 `880702`，僅前端閘門）。可看進度、Actions、資料庫驗證。
+
+Pages 是**靜態唯讀**：無法啟動／停止抓取、編輯 Token、清 log（這些仍用本機 `./tools/open_fetch_dashboard.sh`）。
 
 ## App 下載
 
@@ -42,17 +44,22 @@ docs/                    # GitHub Pages
 
 ## GitHub Actions（雲端自動抓取）
 
-公開 repo 已設定 workflow **Update MT offline data**：
+Workflow：**Update MT offline data**
 
-- **手動**：Actions 頁 → Run workflow
-- **排程**：每 6 小時自動續跑（單次 soft budget ~5 小時，避免硬逾時來不及 commit）
-- **Secret**（Settings → Secrets）：
-  - `FINMIND_TOKENS_JSON`：JSON 陣列 `[{"name":"…","token":"…"}, …]`（建議）
-  - 或 `FINMIND_TOKENS`：逗號分隔 JWT
+- **手動**：Actions → Run workflow
+- **排程**：每 6 小時自動續跑（單次 soft budget ~5 小時，結束前會 commit 進度）
+- **Secret**：`FINMIND_TOKENS_JSON`（建議，含 name+token）或 `FINMIND_TOKENS`（逗號分隔 JWT）
 
-進度寫回本 repo 的 `metrics/` + `status.json`；App 仍從 jsDelivr / Pages 下載。
+進度寫回 `metrics/` + `status.json`；App 從 jsDelivr / Pages 下載。全市場靠多次排程疊加跑齊。
 
-初次全市場建議先推送本機進度再靠 Actions 續跑；純從零在 CI 跑需多次排程才能齊。
+### 本機 vs Actions（會不會衝突？）
 
+| | 本機 | GitHub Actions |
+|--|------|----------------|
+| 腳本 | `scripts/fetch_historical_data.py` | 同檔同步到 `tools/fetch_historical_data.py` |
+| 輸出 | `dist/offline/` | 公開 repo 根目錄 `metrics/` 等 |
+| Token | `finmind_tokens.local.json` | Secret `FINMIND_TOKENS_JSON` |
+
+**可同時跑，但會搶同一組 FinMind 每小時額度**，更容易集體 402，整體更慢。建議同一時間只留一邊在抓；本機進度要進雲端需再 `git push`／同步。
 
 資料來源：[FinMind](https://finmindtrade.com/)

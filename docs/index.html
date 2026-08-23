@@ -3,73 +3,419 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KSH-10-MTOffline 進度</title>
+  <title>MT 離線庫監控</title>
   <style>
-    :root { color-scheme: dark; --bg:#0f1115; --card:#171a21; --border:#2a3140; --text:#e8edf5; --muted:#93a0b5; --ok:#3dd68c; --accent:#6ea8fe; }
-    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); }
-    .wrap { max-width:900px; margin:0 auto; padding:24px 16px; }
-    h1 { font-size:1.3rem; margin:0 0 6px; }
-    .sub { color:var(--muted); font-size:.9rem; margin-bottom:20px; }
-    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px; }
-    .big { font-size:1.8rem; font-weight:700; }
-    .bar-wrap { margin-top:10px; background:#0c0e13; border-radius:999px; height:10px; overflow:hidden; }
-    .bar { height:100%; background:linear-gradient(90deg,#4c8bf5,#3dd68c); width:0%; transition:width .4s; }
-    a { color:var(--accent); }
-    .err { color:#ff6b6b; }
+    :root {
+      color-scheme: dark;
+      --bg: #0f1115;
+      --card: #171a21;
+      --border: #2a3140;
+      --text: #e8edf5;
+      --muted: #93a0b5;
+      --ok: #3dd68c;
+      --quota: #f5b942;
+      --bad: #ff6b6b;
+      --warn: #7eb8ff;
+      --accent: #6ea8fe;
+      --side: 360px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .shell { display: grid; grid-template-columns: minmax(0, 1fr) var(--side); min-height: 100vh; }
+    .main { padding: 24px 16px 48px; max-width: 980px; }
+    .sidebar {
+      border-left: 1px solid var(--border);
+      background: #12151b;
+      padding: 16px 12px 24px;
+      position: sticky; top: 0; height: 100vh;
+      overflow: hidden; display: flex; flex-direction: column; gap: 10px;
+    }
+    h1 { font-size: 1.35rem; margin: 0 0 4px; }
+    h2.side-title { font-size: 0.95rem; margin: 0; }
+    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .card h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+    .big { font-size: 1.5rem; font-weight: 700; }
+    .pill {
+      display: inline-block; padding: 3px 10px; border-radius: 999px;
+      font-size: 0.78rem; font-weight: 600;
+    }
+    .pill.running { background: rgba(61,214,140,.15); color: var(--ok); }
+    .pill.stopped { background: rgba(255,107,107,.12); color: var(--bad); }
+    .bar-wrap { margin-top: 10px; background: #0c0e13; border-radius: 999px; height: 10px; overflow: hidden; }
+    .bar { height: 100%; background: linear-gradient(90deg, #4c8bf5, #3dd68c); width: 0%; transition: width .4s ease; }
+    .chip { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+    .chip.ok { background: rgba(61,214,140,.15); color: var(--ok); }
+    .chip.quota { background: rgba(245,185,66,.15); color: var(--quota); }
+    .chip.bad { background: rgba(255,107,107,.15); color: var(--bad); }
+    .chip.warn { background: rgba(126,184,255,.15); color: var(--warn); }
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    button {
+      background: var(--accent); color: #081018; border: none; border-radius: 8px;
+      padding: 8px 14px; font-weight: 600; cursor: pointer;
+    }
+    button.secondary { background: #2a3140; color: var(--text); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .hint { color: var(--quota); font-size: 0.85rem; margin: 0 0 14px; }
+    .err { color: var(--bad); margin-top: 12px; }
+    .side-meta { color: var(--muted); font-size: 0.78rem; }
+    .side-search {
+      width: 100%; background: #0c0e13; border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 0.85rem;
+    }
+    .inv-list {
+      flex: 1; overflow: auto; border: 1px solid var(--border);
+      border-radius: 10px; background: #0c0e13;
+    }
+    .inv-item { padding: 10px 10px 8px; border-bottom: 1px solid rgba(42,49,64,.7); }
+    .inv-item:last-child { border-bottom: none; }
+    .inv-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+    .inv-name { font-weight: 650; font-size: 0.88rem; }
+    .inv-id { color: var(--muted); font-size: 0.75rem; }
+    .inv-detail { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
+    .side-actions { display: flex; gap: 8px; }
+    .side-actions button { flex: 1; padding: 7px 8px; font-size: 0.8rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .04em; }
+    a { color: var(--accent); }
+    #gate {
+      min-height: 100vh; display: grid; place-items: center; padding: 24px;
+      background: radial-gradient(1200px 600px at 50% -10%, #1a2233, var(--bg));
+    }
+    #gate .box {
+      width: min(400px, 100%); background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px 24px;
+    }
+    #gate h1 { margin-bottom: 8px; }
+    #gate input {
+      width: 100%; margin: 14px 0; padding: 12px 14px; border-radius: 10px;
+      border: 1px solid var(--border); background: #0c0e13; color: var(--text); font-size: 1rem;
+    }
+    #gate .gate-err { color: var(--bad); font-size: 0.85rem; min-height: 1.2em; }
+    #app { display: none; }
+    #app.show { display: block; }
+    @media (max-width: 980px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { position: relative; height: auto; max-height: 70vh; border-left: none; border-top: 1px solid var(--border); }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <h1>MT 台股離線庫進度</h1>
-    <p class="sub">GitHub Pages 唯讀檢視 · 資料來自 repo 內 <code>status.json</code> / <code>manifest.json</code></p>
-    <div id="content" class="card">載入中…</div>
-    <div class="card sub">
-      <p><strong>本機完整功能</strong>（Token 檢測、啟動／停止抓取）請 clone 後執行：</p>
-      <pre style="margin:0;white-space:pre-wrap">git clone https://github.com/jimmy77733/KSH-10-MTOffline.git
-cd KSH-10-MTOffline
-cp tools/finmind_tokens.local.example.json tools/finmind_tokens.local.json
-# 編輯填入 FinMind token（勿 commit）
-./tools/run_fetch_background.sh
-./tools/open_fetch_dashboard.sh</pre>
-      <p style="margin-top:12px">App 下載 manifest：<a id="manifestLink" href="#">manifest.json</a></p>
+  <div id="gate">
+    <div class="box">
+      <h1>MT 離線庫監控</h1>
+      <p class="sub" style="margin:0">輸入密碼進入雲端監控畫面（與本機儀表板對齊的唯讀版）</p>
+      <input id="passInput" type="password" placeholder="密碼" autocomplete="current-password" />
+      <button id="passBtn" type="button" style="width:100%">進入</button>
+      <p class="gate-err" id="gateErr"></p>
     </div>
   </div>
+
+  <div id="app">
+    <div class="shell">
+      <div class="main">
+        <h1>MT 離線抓取監控（GitHub Pages）</h1>
+        <p class="sub">唯讀 · 資料來自公開 repo · jsDelivr 快取約數分鐘</p>
+        <div class="toolbar">
+          <button id="refreshBtn" type="button">立即刷新</button>
+          <label class="sub" style="margin:0"><input type="checkbox" id="autoRefresh" checked /> 每 30 秒自動刷新</label>
+          <span class="sub" id="updatedAt" style="margin:0">—</span>
+          <button class="secondary" id="logoutBtn" type="button">登出</button>
+        </div>
+        <p class="hint">
+          Pages 無法啟動／停止抓取、編輯 Token 或清 log（需本機儀表板）。
+          雲端抓取看下方 Actions；額度由 GitHub Actions 與本機共用 FinMind 配額。
+        </p>
+        <div id="error" class="err" hidden></div>
+        <div class="grid" id="stats"></div>
+
+        <div class="card" style="margin-top:14px">
+          <h2>GitHub Actions</h2>
+          <table>
+            <thead><tr><th>狀態</th><th>觸發</th><th>時間</th><th>連結</th></tr></thead>
+            <tbody id="actionsBody"><tr><td colspan="4">載入中…</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="card" style="margin-top:14px">
+          <h2>進度明細（status.json）</h2>
+          <pre id="statusRaw" class="side-meta" style="white-space:pre-wrap;margin:0"></pre>
+        </div>
+      </div>
+
+      <aside class="sidebar">
+        <h2 class="side-title">資料庫驗證</h2>
+        <div class="side-meta" id="invSummary">掃描中…</div>
+        <input class="side-search" id="invSearch" type="search" placeholder="搜尋代號或名稱…" />
+        <div class="side-actions">
+          <button class="secondary" id="invRefreshBtn" type="button">重新驗證</button>
+          <button class="secondary" id="invMoreBtn" type="button">載入更多</button>
+        </div>
+        <div class="inv-list" id="invList"></div>
+      </aside>
+    </div>
+  </div>
+
   <script>
     const REPO = "jimmy77733/KSH-10-MTOffline";
     const BRANCH = "main";
-    const base = `https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}`;
-    document.getElementById("manifestLink").href = `${base}/manifest.json`;
+    const CDN = `https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}`;
+    const RAW = `https://raw.githubusercontent.com/${REPO}/${BRANCH}`;
+    const PASS = "880702";
+    const AUTH_KEY = "mt_offline_pages_auth_v1";
+    const INV_PAGE = 40;
 
-    function fmtBytes(n) {
+    let invOffset = 0;
+    let invQuery = "";
+    let invTotal = 0;
+    let invCatalog = []; // {id,name,type,latestDate,...}
+    let timer;
+
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const chip = (tone, label) => `<span class="chip ${tone}">${label}</span>`;
+    const fmtBytes = (n) => {
       if (!n) return "0 B";
       const u = ["B","KB","MB","GB"]; let i=0, v=n;
       while (v>=1024 && i<u.length-1) { v/=1024; i++; }
       return `${v.toFixed(i?1:0)} ${u[i]}`;
+    };
+
+    function unlock() {
+      document.getElementById("gate").style.display = "none";
+      document.getElementById("app").classList.add("show");
+      loadAll();
+      schedule();
     }
 
-    async function load() {
-      const el = document.getElementById("content");
+    function tryLogin(pw) {
+      if (String(pw) === PASS) {
+        sessionStorage.setItem(AUTH_KEY, "1");
+        unlock();
+        return true;
+      }
+      document.getElementById("gateErr").textContent = "密碼錯誤";
+      return false;
+    }
+
+    if (sessionStorage.getItem(AUTH_KEY) === "1") unlock();
+
+    document.getElementById("passBtn").onclick = () => tryLogin(document.getElementById("passInput").value);
+    document.getElementById("passInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") tryLogin(e.target.value);
+    });
+    document.getElementById("logoutBtn").onclick = () => {
+      sessionStorage.removeItem(AUTH_KEY);
+      location.reload();
+    };
+
+    async function fetchJson(url) {
+      const res = await fetch(`${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+      return res.json();
+    }
+
+    function verifyRows(rows, expectedId) {
+      if (!Array.isArray(rows) || !rows.length) {
+        return { tone: "bad", label: "無資料", rows: 0, first: null, last: null };
+      }
+      const first = rows[0] || {};
+      const last = rows[rows.length - 1] || {};
+      const closes = rows.filter(r => r && r.close != null).length;
+      const mismatch = rows.some(r => r && r.assetId != null && r.assetId !== expectedId);
+      if (mismatch) return { tone: "bad", label: "代號不符", rows: rows.length, first: first.date, last: last.date };
+      if (closes === 0) return { tone: "bad", label: "無收盤價", rows: rows.length, first: first.date, last: last.date };
+      if (rows.length >= 200 && closes >= Math.max(1, Math.floor(rows.length * 0.7))) {
+        return { tone: "ok", label: "價量齊", rows: rows.length, first: first.date, last: last.date };
+      }
+      return { tone: "warn", label: `資料偏短（${rows.length} 日）`, rows: rows.length, first: first.date, last: last.date };
+    }
+
+    async function loadStats() {
+      const [st, mf, idx] = await Promise.all([
+        fetchJson(`${CDN}/status.json`).catch(() => null),
+        fetchJson(`${CDN}/manifest.json`).catch(() => null),
+        fetchJson(`${CDN}/metrics_index.json`).catch(() => []),
+      ]);
+      if (!st) throw new Error("尚無 status.json");
+
+      const pct = st.coveragePercent ?? (st.universe ? +(100 * st.complete / st.universe).toFixed(2) : 0);
+      const manifestN = mf?.entries?.length ?? 0;
+      const manifestBytes = (mf?.entries || []).reduce((s, e) => s + (e.bytes || 0), 0);
+      const indexN = Array.isArray(idx) ? idx.length : 0;
+
+      // Actions run as "cloud process"
+      let actionsRunning = false;
       try {
-        const [st, mf] = await Promise.all([
-          fetch(`${base}/status.json?t=${Date.now()}`).then(r => r.ok ? r.json() : null),
-          fetch(`${base}/manifest.json?t=${Date.now()}`).then(r => r.ok ? r.json() : null),
-        ]);
-        if (!st) throw new Error("尚無 status.json（抓取進行中或未開始）");
-        const pct = st.coveragePercent ?? (st.universe ? (100*st.complete/st.universe).toFixed(2) : 0);
-        const manifestN = mf?.entries?.length ?? 0;
-        const manifestBytes = (mf?.entries || []).reduce((s,e) => s + (e.bytes||0), 0);
-        el.innerHTML = `
-          <div class="big">${st.complete ?? 0} / ${st.universe ?? "?"}</div>
-          <div class="bar-wrap"><div class="bar" style="width:${Math.min(pct,100)}%"></div></div>
-          <p class="sub">${pct}% · 第 ${st.round ?? "—"} 輪 · 缺 ${st.missing ?? "—"} · 更新 ${st.updatedAt ?? "—"}</p>
-          <p class="sub">manifest ${manifestN} 檔 · 約 ${fmtBytes(manifestBytes)} · 版本 ${mf?.version ?? "—"}</p>
-        `;
+        const runs = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/fetch-offline-data.yml/runs?per_page=5`, {
+          headers: { Accept: "application/vnd.github+json" },
+        }).then(r => r.json());
+        const list = runs.workflow_runs || [];
+        actionsRunning = list.some(r => r.status === "in_progress" || r.status === "queued");
+        document.getElementById("actionsBody").innerHTML = list.length
+          ? list.map(r => `
+              <tr>
+                <td>${chip(
+                  r.conclusion === "success" ? "ok" : r.status === "in_progress" ? "warn" : (r.conclusion ? "bad" : "warn"),
+                  r.conclusion || r.status
+                )}</td>
+                <td>${esc(r.event)}</td>
+                <td class="side-meta">${esc((r.updated_at || "").replace("T"," ").replace("Z"," UTC"))}</td>
+                <td><a href="${esc(r.html_url)}" target="_blank" rel="noopener">開啟</a></td>
+              </tr>`).join("")
+          : `<tr><td colspan="4">尚無 workflow 紀錄</td></tr>`;
       } catch (e) {
-        el.innerHTML = `<p class="err">${e.message}</p>`;
+        document.getElementById("actionsBody").innerHTML =
+          `<tr><td colspan="4" class="err">無法讀 Actions API：${esc(e.message)}</td></tr>`;
+      }
+
+      document.getElementById("stats").innerHTML = `
+        <div class="card">
+          <h2>雲端行程（Actions）</h2>
+          <div class="big"><span class="pill ${actionsRunning ? "running" : "stopped"}">${actionsRunning ? "執行中" : "閒置"}</span></div>
+          <div class="sub"><a href="https://github.com/${REPO}/actions" target="_blank" rel="noopener">Actions 頁面</a></div>
+        </div>
+        <div class="card">
+          <h2>驗證完成</h2>
+          <div class="big">${st.complete ?? 0} / ${st.universe ?? 0}</div>
+          <div class="bar-wrap"><div class="bar" style="width:${Math.min(pct,100)}%"></div></div>
+          <div class="sub">${pct}% · 第 ${st.round ?? "—"} 輪 · 缺 ${st.missing ?? "—"}</div>
+        </div>
+        <div class="card">
+          <h2>索引／分檔</h2>
+          <div class="big">${indexN}</div>
+          <div class="sub">metrics_index · manifest ${manifestN} · ${fmtBytes(manifestBytes)}</div>
+        </div>
+        <div class="card">
+          <h2>更新時間</h2>
+          <div class="big" style="font-size:1.05rem">${esc(st.updatedAt || "—")}</div>
+          <div class="sub">下市／極短 ${st.delistedOrShort ?? "—"}</div>
+        </div>
+      `;
+      document.getElementById("statusRaw").textContent = JSON.stringify(st, null, 2);
+      document.getElementById("updatedAt").textContent = `更新：${new Date().toLocaleString()}`;
+
+      // catalog for inventory
+      const assets = await fetchJson(`${CDN}/assets.json`).catch(() => []);
+      const nameMap = Object.fromEntries((assets || []).map(a => [a.id, a]));
+      invCatalog = (Array.isArray(idx) ? idx : []).map(row => ({
+        id: row.id,
+        name: nameMap[row.id]?.name || row.name || row.id,
+        type: nameMap[row.id]?.type || row.type || "",
+        latestDate: row.latestDate,
+        latestClose: row.latestClose,
+      }));
+    }
+
+    function filteredCatalog() {
+      const q = invQuery.trim().toLowerCase();
+      if (!q) return invCatalog;
+      return invCatalog.filter(it =>
+        String(it.id).toLowerCase().includes(q) || String(it.name).toLowerCase().includes(q)
+      );
+    }
+
+    async function loadInventory({ append = false, reset = false } = {}) {
+      if (reset) invOffset = 0;
+      const all = filteredCatalog();
+      invTotal = all.length;
+      const slice = all.slice(append ? invOffset : 0, (append ? invOffset : 0) + INV_PAGE);
+      document.getElementById("invSummary").textContent =
+        `索引 ${invCatalog.length} 檔 · 本頁驗證 ${slice.length}` + (invQuery ? ` · 篩選 ${invTotal}` : "");
+
+      const list = document.getElementById("invList");
+      if (!append) list.innerHTML = `<div class="inv-item side-meta">驗證中…</div>`;
+
+      const results = [];
+      // 限制並行，避免打爆 CDN
+      const concurrency = 6;
+      let cursor = 0;
+      async function worker() {
+        while (cursor < slice.length) {
+          const i = cursor++;
+          const it = slice[i];
+          try {
+            const rows = await fetchJson(`${CDN}/metrics/${encodeURIComponent(it.id)}.json`);
+            const v = verifyRows(rows, it.id);
+            results[i] = { ...it, ...v, bytes: JSON.stringify(rows).length };
+          } catch (e) {
+            results[i] = { ...it, tone: "bad", label: "讀取失敗", rows: 0, first: null, last: it.latestDate, bytes: 0 };
+          }
+        }
+      }
+      await Promise.all(Array.from({ length: Math.min(concurrency, slice.length) }, () => worker()));
+
+      const html = results.map(it => `
+        <div class="inv-item">
+          <div class="inv-top">
+            <div>
+              <div class="inv-name">${esc(it.name)}</div>
+              <div class="inv-id">${esc(it.id)} · ${esc(it.type || "")}</div>
+            </div>
+            ${chip(it.tone || "warn", it.label || "—")}
+          </div>
+          <div class="inv-detail">
+            ${it.rows ?? 0} 日 · ${esc(it.first || "—")} → ${esc(it.last || "—")}
+            · ~${fmtBytes(it.bytes || 0)}
+          </div>
+        </div>
+      `).join("");
+
+      if (append) list.insertAdjacentHTML("beforeend", html);
+      else list.innerHTML = html || `<div class="inv-item side-meta">尚無分檔，或沒有符合搜尋的項目</div>`;
+
+      invOffset = (append ? invOffset : 0) + slice.length;
+      document.getElementById("invMoreBtn").disabled = invOffset >= invTotal;
+
+      const ok = results.filter(r => r.tone === "ok").length;
+      const warn = results.filter(r => r.tone === "warn").length;
+      const bad = results.filter(r => r.tone === "bad").length;
+      document.getElementById("invSummary").textContent =
+        `索引 ${invCatalog.length} · 已驗證 ${invOffset}/${invTotal} · 通過 ${ok} · 警告 ${warn} · 失敗 ${bad}`;
+    }
+
+    async function loadAll() {
+      try {
+        document.getElementById("error").hidden = true;
+        await loadStats();
+        await loadInventory({ reset: true });
+      } catch (e) {
+        document.getElementById("error").hidden = false;
+        document.getElementById("error").textContent = e.message;
       }
     }
-    load();
-    setInterval(load, 30000);
+
+    function schedule() {
+      clearInterval(timer);
+      if (document.getElementById("autoRefresh").checked) {
+        timer = setInterval(loadAll, 30000);
+      }
+    }
+
+    document.getElementById("refreshBtn").onclick = () => loadAll();
+    document.getElementById("autoRefresh").onchange = schedule;
+    document.getElementById("invRefreshBtn").onclick = () => loadInventory({ reset: true });
+    document.getElementById("invMoreBtn").onclick = () => loadInventory({ append: true });
+    let searchTimer;
+    document.getElementById("invSearch").addEventListener("input", (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        invQuery = e.target.value.trim();
+        loadInventory({ reset: true });
+      }, 250);
+    });
   </script>
 </body>
 </html>

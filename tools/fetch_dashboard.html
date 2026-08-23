@@ -119,8 +119,10 @@
       max-height: 360px;
       color: #c5d0e0;
     }
-    .log-line { padding: 3px 0; border-bottom: 1px solid rgba(42,49,64,.55); }
+    .log-line { padding: 3px 0; border-bottom: 1px solid rgba(42,49,64,.55); display: grid; grid-template-columns: 72px 1fr; gap: 8px; }
     .log-line:last-child { border-bottom: none; }
+    .log-time { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 0.72rem; white-space: nowrap; }
+    .log-text { min-width: 0; word-break: break-word; }
     .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
     button {
       background: var(--accent);
@@ -411,7 +413,12 @@
 
       const logs = data.logTail || [];
       document.getElementById("logBox").innerHTML = logs.length
-        ? logs.map(l => `<div class="log-line">${esc(l)}</div>`).join("")
+        ? logs.map(l => {
+            const at = typeof l === "string" ? "" : (l.at || "");
+            const text = typeof l === "string" ? l : (l.text || "");
+            const time = at.includes(" ") ? at.split(" ")[1] : at;
+            return `<div class="log-line"><span class="log-time">${esc(time || "—")}</span><span class="log-text">${esc(text)}</span></div>`;
+          }).join("")
         : "<div class='side-meta'>（尚無 log）</div>";
 
       document.getElementById("updatedAt").textContent = `更新：${data.generatedAt || "—"}`;
@@ -704,7 +711,7 @@
       }
     };
 
-    document.getElementById("refreshBtn").onclick = () => load(false);
+    document.getElementById("refreshBtn").onclick = () => load(true);
     document.getElementById("probeBtn").onclick = () => load(true);
     document.getElementById("startBtn").onclick = async () => {
       try {

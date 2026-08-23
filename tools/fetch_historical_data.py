@@ -1,6 +1,8 @@
 import json
 import os
+import re
 import shutil
+import sys
 import threading
 import time
 import urllib.error
@@ -9,6 +11,50 @@ import urllib.request
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
+
+
+class _TimestampStdout:
+    """為每行 log 加上 [YYYY-MM-DD HH:MM:SS] 時間軸。"""
+
+    _HAS_TS = re.compile(r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]")
+
+    def __init__(self, stream):
+        self._stream = stream
+        self._buf = ""
+
+    def write(self, s):
+        if not isinstance(s, str):
+            s = str(s)
+        self._buf += s
+        while "\n" in self._buf:
+            line, self._buf = self._buf.split("\n", 1)
+            if self._HAS_TS.match(line) or line.startswith("==="):
+                self._stream.write(line + "\n")
+            else:
+                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                self._stream.write(f"[{ts}] {line}\n")
+
+    def flush(self):
+        if self._buf:
+            if self._HAS_TS.match(self._buf) or self._buf.startswith("==="):
+                self._stream.write(self._buf)
+            else:
+                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                self._stream.write(f"[{ts}] {self._buf}")
+            self._buf = ""
+        self._stream.flush()
+
+    def fileno(self):
+        return self._stream.fileno()
+
+    def isatty(self):
+        return self._stream.isatty()
+
+
+if not isinstance(sys.stdout, _TimestampStdout):
+    sys.stdout = _TimestampStdout(sys.stdout)
+if not isinstance(sys.stderr, _TimestampStdout):
+    sys.stderr = _TimestampStdout(sys.stderr)
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(TOOLS_DIR)
