@@ -172,8 +172,9 @@
   <script>
     const REPO = "jimmy77733/KSH-10-MTOffline";
     const BRANCH = "main";
-    const CDN = `https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}`;
+    // status／索引用 raw（較即時）；分檔驗證用 jsDelivr（大量檔較穩）
     const RAW = `https://raw.githubusercontent.com/${REPO}/${BRANCH}`;
+    const CDN = `https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}`;
     const PASS = "880702";
     const AUTH_KEY = "mt_offline_pages_auth_v1";
     const INV_PAGE = 40;
@@ -245,9 +246,9 @@
 
     async function loadStats() {
       const [st, mf, idx] = await Promise.all([
-        fetchJson(`${CDN}/status.json`).catch(() => null),
-        fetchJson(`${CDN}/manifest.json`).catch(() => null),
-        fetchJson(`${CDN}/metrics_index.json`).catch(() => []),
+        fetchJson(`${RAW}/status.json`).catch(() => fetchJson(`${CDN}/status.json`)),
+        fetchJson(`${RAW}/manifest.json`).catch(() => fetchJson(`${CDN}/manifest.json`).catch(() => null)),
+        fetchJson(`${RAW}/metrics_index.json`).catch(() => fetchJson(`${CDN}/metrics_index.json`).catch(() => [])),
       ]);
       if (!st) throw new Error("尚無 status.json");
 
@@ -308,7 +309,7 @@
       document.getElementById("updatedAt").textContent = `更新：${new Date().toLocaleString()}`;
 
       // catalog for inventory
-      const assets = await fetchJson(`${CDN}/assets.json`).catch(() => []);
+      const assets = await fetchJson(`${RAW}/assets.json`).catch(() => fetchJson(`${CDN}/assets.json`).catch(() => []));
       const nameMap = Object.fromEntries((assets || []).map(a => [a.id, a]));
       invCatalog = (Array.isArray(idx) ? idx : []).map(row => ({
         id: row.id,
