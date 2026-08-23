@@ -7,17 +7,17 @@ on:
         description: "Manual run note"
         required: false
         default: "manual"
-      soft_minutes:
-        description: "Soft time budget (minutes) before commit & exit"
+      market:
+        description: "選擇市場 (all / tw / us / package)"
         required: false
-        default: "300"
+        default: "all"
   schedule:
-    # 每 6 小時續跑；公開 repo Actions 單次最長約 6h，靠排程疊加跑完 ~3000 檔
+    # 每日排程自動執行
     - cron: "15 */6 * * *"
-    # 台灣股市：週一~五 UTC 00:30 = 台灣 08:30（開盤前 30 分）
     - cron: "30 0 * * 1-5"
-    # 台灣股市：週一~五 UTC 05:30 = 台灣 13:30（收盤後立即更新）
     - cron: "30 5 * * 1-5"
+    # 美股收盤排程 (美東 16:30 = UTC 20:30)
+    - cron: "30 20 * * 1-5"
 
 concurrency:
   group: mt-offline-fetch
@@ -39,7 +39,20 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install Python Dependencies
+        run: |
+          pip install yfinance pandas numpy requests urllib3
+
+      - name: Fetch US Offline Data & Options Wall
+        if: ${{ github.event.inputs.market != 'tw' }}
+        env:
+          MT_OFFLINE_ROOT: ${{ github.workspace }}
+          MT_REPO_ROOT: ${{ github.workspace }}
+        run: |
+          python3 -u tools/fetch_us_offline_data.py || echo "US fetch completed with warnings"
+
       - name: Write FinMind tokens
+        if: ${{ github.event.inputs.market != 'us' && (env.FINMIND_TOKENS_JSON != '' || env.FINMIND_TOKENS != '') }}
         env:
           FINMIND_TOKENS_JSON: ${{ secrets.FINMIND_TOKENS_JSON }}
           FINMIND_TOKENS: ${{ secrets.FINMIND_TOKENS }}
@@ -65,51 +78,47 @@ jobs:
               tokens = [t.strip() for t in raw_csv.split(",") if t.strip()]
               out = [{"name": f"token-{i+1}", "token": t} for i, t in enumerate(tokens)]
           if not out:
-              print("Missing secret: set FINMIND_TOKENS_JSON or FINMIND_TOKENS", file=sys.stderr)
-              sys.exit(1)
+              print("No tokens found; skipping TW fetch", file=sys.stderr)
+              sys.exit(0)
           open(path, "w", encoding="utf-8").write(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
-          print(f"Wrote {len(out)} tokens to {path} (not committed)")
+          print(f"Wrote {len(out)} tokens to {path}")
           PY
 
-      - name: Fetch (resume, soft budget)
+      - name: Fetch TW Data (resume, soft budget)
+        if: ${{ github.event.inputs.market != 'us' && hashFiles('tools/finmind_tokens.local.json') != '' }}
         env:
           MT_OFFLINE_ROOT: ${{ github.workspace }}
           MT_REPO_ROOT: ${{ github.workspace }}
-          # 避免在 CI 誤寫 App seed
           MT_APP_SEED_DIR: ""
         run: |
-          SOFT="${{ github.event.inputs.soft_minutes || '300' }}"
-          echo "Soft budget: ${SOFT} minutes (Actions hard cap ~360)"
           set +e
-          timeout "${SOFT}m" python3 -u tools/fetch_historical_data.py
+          timeout 300m python3 -u tools/fetch_historical_data.py
           code=$?
           set -e
           if [ "$code" -eq 124 ]; then
             echo "Soft timeout reached — committing partial progress"
             exit 0
           fi
-          exit "$code"
+
+      - name: Package Full Bundle Zip
+        env:
+          MT_OFFLINE_ROOT: ${{ github.workspace }}
+          MT_REPO_ROOT: ${{ github.workspace }}
+        run: |
+          python3 -u tools/package_offline_bundle.py || echo "Packaging completed with warnings"
 
       - name: Commit & push progress
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # 絕不提交 token
           rm -f tools/finmind_tokens.local.json tools/finmind_tokens.local.txt
-          git add -A status.json manifest.json metrics_index.json assets.json stock_directory.json metrics/ || true
+          git add -A status.json manifest.json metrics_index.json assets.json stock_directory.json us_index_history.json us_options_wall.json us_stock_directory.json mt_offline_bundle.zip metrics/ tools/ docs/ || true
           git add incomplete_report.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No data changes to commit"
           else
-            git commit -m "chore: update offline data ($(date -u +%Y-%m-%dT%H:%MZ)) [skip ci]"
+            git commit -m "chore: automated update TW & US offline data ($(date -u +%Y-%m-%dT%H:%MZ)) [skip ci]"
             git pull --rebase origin main || true
             git push
-          fi
-          if [ -f status.json ]; then
-            python3 - <<'PY'
-          import json
-          s=json.load(open("status.json"))
-          print(f"status: {s.get('complete')}/{s.get('universe')} ({s.get('coveragePercent')}%) round={s.get('round')}")
-          PY
           fi

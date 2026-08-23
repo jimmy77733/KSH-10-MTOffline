@@ -3,387 +3,469 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MT 離線庫監控</title>
+  <title>Market Tracker 離線數據庫與監控看板</title>
   <style>
     :root {
       color-scheme: dark;
-      --bg: #0f1115;
-      --card: #171a21;
-      --border: #2a3140;
-      --text: #e8edf5;
-      --muted: #93a0b5;
-      --ok: #3dd68c;
-      --quota: #f5b942;
-      --bad: #ff6b6b;
-      --warn: #7eb8ff;
-      --accent: #6ea8fe;
-      --side: 360px;
+      --bg: #0d1117;
+      --card: #161b22;
+      --card-elevated: #1f242c;
+      --border: #30363d;
+      --text: #f0f6fc;
+      --muted: #8b949e;
+      --ok: #3fb950;
+      --quota: #d29922;
+      --bad: #f85149;
+      --accent: #58a6ff;
+      --purple: #bc8cff;
+      --side: 380px;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      line-height: 1.45;
+      line-height: 1.5;
     }
     .shell { display: grid; grid-template-columns: minmax(0, 1fr) var(--side); min-height: 100vh; }
-    .main { padding: 24px 16px 48px; max-width: 980px; }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { border-left: none !important; border-top: 1px solid var(--border); height: auto !important; position: static !important; }
+    }
+    .main { padding: 24px 20px 60px; max-width: 1080px; }
     .sidebar {
       border-left: 1px solid var(--border);
-      background: #12151b;
-      padding: 16px 12px 24px;
+      background: #111419;
+      padding: 20px 16px 32px;
       position: sticky; top: 0; height: 100vh;
-      overflow: hidden; display: flex; flex-direction: column; gap: 10px;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
     }
-    h1 { font-size: 1.35rem; margin: 0 0 4px; }
-    h2.side-title { font-size: 0.95rem; margin: 0; }
-    .sub { color: var(--muted); font-size: 0.9rem; margin-bottom: 16px; }
-    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+    h1 { font-size: 1.45rem; font-weight: 700; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+    .sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 18px; }
+    
+    .nav-tabs {
+      display: flex; gap: 8px; margin-bottom: 20px;
+      background: #161b22; padding: 4px; border-radius: 10px; border: 1px solid var(--border);
+      width: fit-content;
+    }
+    .tab-btn {
+      background: transparent; border: none; color: var(--muted);
+      padding: 8px 16px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+      transition: all .2s ease;
+    }
+    .tab-btn.active {
+      background: var(--accent); color: #fff;
+    }
+    
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
     .card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
+      border-radius: 14px;
+      padding: 16px 18px;
+      position: relative;
     }
-    .card h2 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
-    .big { font-size: 1.5rem; font-weight: 700; }
+    .card h2 { font-size: 0.76rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+    .big { font-size: 1.6rem; font-weight: 700; }
     .pill {
-      display: inline-block; padding: 3px 10px; border-radius: 999px;
-      font-size: 0.78rem; font-weight: 600;
+      display: inline-block; padding: 3px 12px; border-radius: 999px;
+      font-size: 0.8rem; font-weight: 600;
     }
-    .pill.running { background: rgba(61,214,140,.15); color: var(--ok); }
-    .pill.stopped { background: rgba(255,107,107,.12); color: var(--bad); }
-    .bar-wrap { margin-top: 10px; background: #0c0e13; border-radius: 999px; height: 10px; overflow: hidden; }
-    .bar { height: 100%; background: linear-gradient(90deg, #4c8bf5, #3dd68c); width: 0%; transition: width .4s ease; }
-    .chip { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
-    .chip.ok { background: rgba(61,214,140,.15); color: var(--ok); }
-    .chip.quota { background: rgba(245,185,66,.15); color: var(--quota); }
-    .chip.bad { background: rgba(255,107,107,.15); color: var(--bad); }
-    .chip.warn { background: rgba(126,184,255,.15); color: var(--warn); }
-    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
-    button {
-      background: var(--accent); color: #081018; border: none; border-radius: 8px;
-      padding: 8px 14px; font-weight: 600; cursor: pointer;
+    .pill.running { background: rgba(63,185,80,.18); color: var(--ok); }
+    .pill.stopped { background: rgba(248,81,73,.15); color: var(--bad); }
+    .bar-wrap { margin-top: 10px; background: #0d1117; border-radius: 999px; height: 10px; overflow: hidden; }
+    .bar { height: 100%; background: linear-gradient(90deg, #58a6ff, #3fb950); width: 0%; transition: width .4s ease; }
+    
+    .chip { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
+    .chip.ok { background: rgba(63,185,80,.18); color: var(--ok); }
+    .chip.warn { background: rgba(88,166,255,.18); color: var(--accent); }
+    .chip.quota { background: rgba(210,153,34,.18); color: var(--quota); }
+    .chip.bad { background: rgba(248,81,73,.18); color: var(--bad); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; }
+    
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 14px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+      background: var(--accent); color: #fff; border: none; cursor: pointer; text-decoration: none;
     }
-    button.secondary { background: #2a3140; color: var(--text); }
-    button:disabled { opacity: 0.45; cursor: not-allowed; }
-    .hint { color: var(--quota); font-size: 0.85rem; margin: 0 0 14px; }
-    .err { color: var(--bad); margin-top: 12px; }
-    .side-meta { color: var(--muted); font-size: 0.78rem; }
-    .side-search {
-      width: 100%; background: #0c0e13; border: 1px solid var(--border);
-      border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 0.85rem;
+    .btn-secondary {
+      background: #21262d; color: var(--text); border: 1px solid var(--border);
     }
-    .inv-list {
-      flex: 1; overflow: auto; border: 1px solid var(--border);
-      border-radius: 10px; background: #0c0e13;
+    .btn-secondary:hover { background: #30363d; }
+    
+    /* Options Wall specific */
+    .wall-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 12px;
     }
-    .inv-item { padding: 10px 10px 8px; border-bottom: 1px solid rgba(42,49,64,.7); }
-    .inv-item:last-child { border-bottom: none; }
-    .inv-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
-    .inv-name { font-weight: 650; font-size: 0.88rem; }
+    .wall-metric {
+      background: var(--card-elevated); padding: 10px; border-radius: 8px; border: 1px solid var(--border);
+    }
+    .wall-metric .lbl { font-size: 0.72rem; color: var(--muted); }
+    .wall-metric .val { font-size: 1.15rem; font-weight: 700; color: var(--accent); margin-top: 2px; }
+
+    /* Inventory Items */
+    .inv-item {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 14px; margin-bottom: 8px; font-size: 0.85rem;
+    }
+    .inv-top { display: flex; justify-content: space-between; align-items: center; }
+    .inv-name { font-weight: 600; }
     .inv-id { color: var(--muted); font-size: 0.75rem; }
-    .inv-detail { color: var(--muted); font-size: 0.75rem; margin-top: 4px; }
-    .side-actions { display: flex; gap: 8px; }
-    .side-actions button { flex: 1; padding: 7px 8px; font-size: 0.8rem; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
-    th { color: var(--muted); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: .04em; }
-    a { color: var(--accent); }
-    @media (max-width: 980px) {
-      .shell { grid-template-columns: 1fr; }
-      .sidebar { position: relative; height: auto; max-height: 70vh; border-left: none; border-top: 1px solid var(--border); }
-    }
+    .inv-detail { margin-top: 4px; font-size: 0.78rem; color: var(--muted); font-family: monospace; }
   </style>
 </head>
 <body>
   <div class="shell">
     <div class="main">
-      <h1>Market Tracker 數據抓取監控（GitHub Pages）</h1>
-      <p class="sub">唯讀 · 資料來自公開 repo</p>
-      <div class="toolbar">
-        <button id="refreshBtn" type="button">立即刷新</button>
-        <label class="sub" style="margin:0"><input type="checkbox" id="autoRefresh" checked /> 每 30 秒自動刷新</label>
-        <span class="sub" id="updatedAt" style="margin:0">—</span>
-      </div>
-      <div id="error" class="err" hidden></div>
-      <div class="grid" id="stats"></div>
-
-      <div class="card" style="margin-top:14px">
-        <h2>GitHub Actions</h2>
-        <table>
-          <thead><tr><th>狀態</th><th>觸發</th><th>時間</th><th>連結</th></tr></thead>
-          <tbody id="actionsBody"><tr><td colspan="4">載入中…</td></tr></tbody>
-        </table>
+      <h1>
+        <span>🚀 Market Tracker 離線數據庫監控</span>
+        <span id="repoBadge" class="chip ok">GitHub Pages</span>
+      </h1>
+      <div class="sub">
+        全市場台美股歷史 K 線、SPY 期權支撐壓力牆與全量打包檔託管中心
       </div>
 
-      <div class="card" style="margin-top:14px">
-        <h2>進度明細（status.json）</h2>
-        <pre id="statusRaw" class="side-meta" style="white-space:pre-wrap;margin:0"></pre>
+      <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div class="nav-tabs">
+          <button id="btn-overview" class="tab-btn active" onclick="switchTab('overview')">📊 總覽與美股期權</button>
+          <button id="btn-us" class="tab-btn" onclick="switchTab('us')">🇺🇸 美股歷史庫</button>
+          <button id="btn-tw" class="tab-btn" onclick="switchTab('tw')">🇹🇼 台股數據狀態</button>
+          <button id="btn-actions" class="tab-btn" onclick="switchTab('actions')">⚡️ Actions 執行紀錄</button>
+        </div>
+        <div style="display:flex; align-items: center; gap: 10px;">
+          <button id="refreshBtn" class="btn btn-secondary">立即刷新</button>
+          <label style="font-size: 0.82rem; color: var(--muted); display:flex; align-items:center; gap: 4px;">
+            <input type="checkbox" id="autoRefresh" checked /> 每 30 秒自動更新
+          </label>
+        </div>
       </div>
+
+      <div id="stats" class="grid" style="margin-bottom: 24px;">
+        <!-- 頂部即時統計由 JS 動態填入 -->
+      </div>
+
+      <!-- Tab 1: Overview & US Options -->
+      <div id="tab-overview">
+        <div class="card" style="margin-bottom: 20px;">
+          <h2>📦 全量離線補充包 (Offline Bundle Zip)</h2>
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 12px;">
+            <div>
+              <div style="font-size:1.1rem; font-weight:700;">mt_offline_bundle.zip</div>
+              <div class="sub" style="margin-bottom:0;">包含全市場 2,835+ 檔台美股歷史日 K 線、大盤指數與 SPY 期權牆</div>
+            </div>
+            <a id="bundleDownloadBtn" href="https://raw.githubusercontent.com/jimmy77733/KSH-10-MTOffline/main/mt_offline_bundle.zip" class="btn" target="_blank">
+              ⬇️ 下載打包檔 (~67 MB)
+            </a>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 20px;">
+          <h2>🇺🇸 SPY 期權支撐壓力牆 (Options Wall & GEX)</h2>
+          <div id="optionsWallContent">載入期權牆數據中...</div>
+        </div>
+
+        <div class="card">
+          <h2>🇺🇸 美股四大指數歷史狀態</h2>
+          <div id="usIndicesGrid" class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+            載入美股指數中...
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 2: US Stocks -->
+      <div id="tab-us" style="display:none;">
+        <div class="card">
+          <h2>🇺🇸 美股科技權值 (M7) 與 11 大板塊 ETF</h2>
+          <div id="usStocksTable">載入美股標的清單中...</div>
+        </div>
+      </div>
+
+      <!-- Tab 3: TW Stocks -->
+      <div id="tab-tw" style="display:none;">
+        <div class="card" style="margin-bottom: 20px;">
+          <h2>🇹🇼 台股資料庫進度明細 (status.json)</h2>
+          <pre id="statusRaw" style="background:#0d1117; padding:12px; border-radius:8px; font-size:0.8rem; overflow-x:auto;">載入中...</pre>
+        </div>
+      </div>
+
+      <!-- Tab 4: Actions -->
+      <div id="tab-actions" style="display:none;">
+        <div class="card">
+          <h2>⚡️ 最近 GitHub Actions 執行紀錄</h2>
+          <table style="margin-top: 10px;">
+            <thead>
+              <tr><th>狀態</th><th>觸發方式</th><th>更新時間</th><th>操作</th></tr>
+            </thead>
+            <tbody id="actionsBody">
+              <tr><td colspan="4">載入 Actions 紀錄中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
 
-    <aside class="sidebar">
-      <h2 class="side-title">資料庫驗證</h2>
-      <div class="side-meta" id="invSummary">掃描中…</div>
-      <input class="side-search" id="invSearch" type="search" placeholder="搜尋代號或名稱…" />
-      <div class="side-actions">
-        <button class="secondary" id="invRefreshBtn" type="button">重新驗證</button>
-        <button class="secondary" id="invMoreBtn" type="button">載入更多</button>
+    <!-- Sidebar: Real-time Sample Inspection -->
+    <div class="sidebar">
+      <div style="display:flex; justify-content: space-between; align-items: center;">
+        <h2 class="side-title">檔案抽驗面板</h2>
+        <button id="invRefreshBtn" class="btn btn-secondary" style="padding:4px 8px; font-size:0.75rem;">重新驗證</button>
       </div>
-      <div class="inv-list" id="invList"></div>
-    </aside>
+      <div id="invSummary" class="sub" style="font-size:0.8rem; margin:0;">準備抽驗中...</div>
+      <input id="invSearch" type="search" placeholder="搜尋台/美股代號或名稱..." style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--card); color:var(--text); font-size:0.85rem;" />
+      <div id="invList" style="flex:1; overflow-y:auto;"></div>
+      <button id="invMoreBtn" class="btn btn-secondary" style="width:100%;" disabled>載入更多</button>
+    </div>
   </div>
 
   <script>
-    const REPO = "jimmy77733/KSH-10-MTOffline";
-    const BRANCH = "main";
-    // status／索引用 raw（較即時）；分檔驗證用 jsDelivr（大量檔較穩）
-    const RAW = `https://raw.githubusercontent.com/${REPO}/${BRANCH}`;
-    const CDN = `https://cdn.jsdelivr.net/gh/${REPO}@${BRANCH}`;
-    const INV_PAGE = 40;
+    const REPO = 'jimmy77733/KSH-10-MTOffline';
+    const CDN = 'https://cdn.jsdelivr.net/gh/' + REPO + '@main';
+    const RAW = 'https://raw.githubusercontent.com/' + REPO + '/main';
 
+    let invCatalog = [];
     let invOffset = 0;
-    let invQuery = "";
     let invTotal = 0;
-    let invCatalog = []; // {id,name,type,latestDate,...}
-    let timer;
+    let invQuery = '';
+    const INV_PAGE = 25;
+    let searchTimer = null;
 
-    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const chip = (tone, label) => `<span class="chip ${tone}">${label}</span>`;
-    const fmtBytes = (n) => {
-      if (!n) return "0 B";
-      const u = ["B","KB","MB","GB"]; let i=0, v=n;
-      while (v>=1024 && i<u.length-1) { v/=1024; i++; }
-      return `${v.toFixed(i?1:0)} ${u[i]}`;
-    };
+    function esc(s) {
+      return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function fmtBytes(n) {
+      if (!n || n <= 0) return '0 B';
+      if (n > 1048576) return (n / 1048576).toFixed(1) + ' MB';
+      return (n / 1024).toFixed(0) + ' KB';
+    }
+    function chip(tone, label) {
+      return '<span class="chip ' + tone + '">' + esc(label) + '</span>';
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById('btn-' + name);
+      if (activeBtn) activeBtn.classList.add('active');
+      ['overview', 'us', 'tw', 'actions'].forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.style.display = (t === name) ? 'block' : 'none';
+      });
+    }
 
     async function fetchJson(url) {
-      const res = await fetch(`${url}${url.includes("?") ? "&" : "?"}t=${Date.now()}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
+      const res = await fetch(url, { cache: 'no-cache' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
     }
 
-    function verifyRows(rows, expectedId) {
-      if (!Array.isArray(rows) || !rows.length) {
-        return { tone: "bad", label: "無資料", rows: 0, first: null, last: null };
-      }
-      const first = rows[0] || {};
-      const last = rows[rows.length - 1] || {};
-      const closes = rows.filter(r => r && r.close != null).length;
-      const mismatch = rows.some(r => r && r.assetId != null && r.assetId !== expectedId);
-      if (mismatch) return { tone: "bad", label: "代號不符", rows: rows.length, first: first.date, last: last.date };
-      if (closes === 0) return { tone: "bad", label: "無收盤價", rows: rows.length, first: first.date, last: last.date };
-      if (rows.length >= 200 && closes >= Math.max(1, Math.floor(rows.length * 0.7))) {
-        return { tone: "ok", label: "價量齊", rows: rows.length, first: first.date, last: last.date };
-      }
-      return { tone: "warn", label: `資料偏短（${rows.length} 日）`, rows: rows.length, first: first.date, last: last.date };
-    }
-
     async function loadStats() {
-      const [st, mf, idx, assets, tree] = await Promise.all([
-        fetchJson(`${RAW}/status.json`).catch(() => fetchJson(`${CDN}/status.json`)),
-        fetchJson(`${RAW}/manifest.json`).catch(() => fetchJson(`${CDN}/manifest.json`).catch(() => null)),
-        fetchJson(`${RAW}/metrics_index.json`).catch(() => fetchJson(`${CDN}/metrics_index.json`).catch(() => [])),
-        fetchJson(`${RAW}/assets.json`).catch(() => fetchJson(`${CDN}/assets.json`).catch(() => [])),
-        fetch(`https://api.github.com/repos/${REPO}/git/trees/${BRANCH}?recursive=1`, {
-          headers: { Accept: "application/vnd.github+json" },
-        }).then(r => r.ok ? r.json() : null).catch(() => null),
+      const [st, mf, wall, usIdx] = await Promise.all([
+        fetchJson(RAW + '/status.json').catch(() => ({})),
+        fetchJson(RAW + '/manifest.json').catch(() => ({})),
+        fetchJson(RAW + '/us_options_wall.json').catch(() => null),
+        fetchJson(RAW + '/us_index_history.json').catch(() => null)
       ]);
-      if (!st) throw new Error("尚無 status.json");
 
-      const pct = st.coveragePercent ?? (st.universe ? +(100 * st.complete / st.universe).toFixed(2) : 0);
-      const nameMap = Object.fromEntries((assets || []).map(a => [a.id, a]));
-
-      // 實際在 repo 的 metrics 分檔（比過期的 metrics_index 準）
-      const diskIds = new Set();
-      if (tree && Array.isArray(tree.tree)) {
-        for (const t of tree.tree) {
-          const m = /^metrics\/([^/]+)\.json$/.exec(t.path || "");
-          if (m) diskIds.add(m[1]);
-        }
-      }
-      const indexList = Array.isArray(idx) ? idx : [];
-      const indexById = Object.fromEntries(indexList.map(e => [e.id, e]));
-
-      // 目錄優先：磁碟上有的分檔；名稱來自 assets／index
-      const idList = diskIds.size
-        ? [...diskIds].sort()
-        : (indexList.length ? indexList.map(e => e.id) : (assets || []).map(a => a.id));
-
-      invCatalog = idList.map(id => {
-        const fromIdx = indexById[id] || {};
-        const fromAsset = nameMap[id] || {};
-        return {
-          id,
-          name: fromAsset.name || fromIdx.name || id,
-          type: fromAsset.type || fromIdx.type || "",
-          latestDate: fromIdx.latestDate,
-          latestClose: fromIdx.latestClose,
-          onDisk: diskIds.size ? diskIds.has(id) : true,
-        };
-      });
-
-      const diskN = diskIds.size || invCatalog.length;
-      const universeN = st.universe || (assets || []).length || 0;
       const manifestN = mf?.entries?.length ?? 0;
-      const manifestBytes = (mf?.entries || []).reduce((s, e) => s + (e.bytes || 0), 0);
-      const indexN = indexList.length;
+      const manifestBytes = mf?.totalMetricsBytes ?? (mf?.entries || []).reduce((s, e) => s + (e.bytes || 0), 0);
+      const bundleBytes = mf?.bundleBytes ?? 0;
+      const pct = st.coveragePercent ?? (st.universe ? (100 * (st.complete || 0) / st.universe).toFixed(1) : 0);
 
-      // Actions run as "cloud process"
+      // Actions status
       let actionsRunning = false;
       try {
-        const runs = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/fetch-offline-data.yml/runs?per_page=5`, {
-          headers: { Accept: "application/vnd.github+json" },
+        const runs = await fetch('https://api.github.com/repos/' + REPO + '/actions/workflows/fetch-offline-data.yml/runs?per_page=5', {
+          headers: { Accept: 'application/vnd.github+json' }
         }).then(r => r.json());
         const list = runs.workflow_runs || [];
-        actionsRunning = list.some(r => r.status === "in_progress" || r.status === "queued");
-        document.getElementById("actionsBody").innerHTML = list.length
-          ? list.map(r => `
-              <tr>
-                <td>${chip(
-                  r.conclusion === "success" ? "ok" : r.status === "in_progress" ? "warn" : (r.conclusion ? "bad" : "warn"),
-                  r.conclusion || r.status
-                )}</td>
-                <td>${esc(r.event)}</td>
-                <td class="side-meta">${esc((r.updated_at || "").replace("T"," ").replace("Z"," UTC"))}</td>
-                <td><a href="${esc(r.html_url)}" target="_blank" rel="noopener">開啟</a></td>
-              </tr>`).join("")
-          : `<tr><td colspan="4">尚無 workflow 紀錄</td></tr>`;
+        actionsRunning = list.some(r => r.status === 'in_progress' || r.status === 'queued');
+        document.getElementById('actionsBody').innerHTML = list.length ? list.map(r => `
+          <tr>
+            <td>${chip(r.conclusion === 'success' ? 'ok' : r.status === 'in_progress' ? 'warn' : (r.conclusion ? 'bad' : 'warn'), r.conclusion || r.status)}</td>
+            <td>${esc(r.event)}</td>
+            <td style="font-size:0.78rem; color:var(--muted);">${esc((r.updated_at || '').replace('T',' ').replace('Z',' UTC'))}</td>
+            <td><a href="${esc(r.html_url)}" target="_blank" class="btn btn-secondary" style="padding:2px 8px; font-size:0.75rem;">開啟</a></td>
+          </tr>`).join('') : '<tr><td colspan="4">尚無紀錄</td></tr>';
       } catch (e) {
-        document.getElementById("actionsBody").innerHTML =
-          `<tr><td colspan="4" class="err">無法讀 Actions API：${esc(e.message)}</td></tr>`;
+        document.getElementById('actionsBody').innerHTML = '<tr><td colspan="4" style="color:var(--bad)">無法讀取 Actions：' + esc(e.message) + '</td></tr>';
       }
 
-      document.getElementById("stats").innerHTML = `
+      document.getElementById('stats').innerHTML = `
         <div class="card">
-          <h2>雲端行程（Actions）</h2>
-          <div class="big"><span class="pill ${actionsRunning ? "running" : "stopped"}">${actionsRunning ? "執行中" : "閒置"}</span></div>
-          <div class="sub"><a href="https://github.com/${REPO}/actions" target="_blank" rel="noopener">Actions 頁面</a></div>
+          <h2>雲端排程 (Actions)</h2>
+          <div class="big"><span class="pill ${actionsRunning ? 'running' : 'stopped'}">${actionsRunning ? '執行中' : '閒置'}</span></div>
+          <div class="sub" style="margin-top:6px;"><a href="https://github.com/${REPO}/actions" target="_blank" style="color:var(--accent); text-decoration:none;">前往 Actions 頁面 ➔</a></div>
         </div>
         <div class="card">
-          <h2>驗證完成</h2>
+          <h2>台股驗證進度</h2>
           <div class="big">${st.complete ?? 0} / ${st.universe ?? 0}</div>
           <div class="bar-wrap"><div class="bar" style="width:${Math.min(pct,100)}%"></div></div>
-          <div class="sub">${pct}% · 第 ${st.round ?? "—"} 輪 · 缺 ${st.missing ?? "—"}</div>
+          <div class="sub" style="margin-top:6px;">${pct}% · 缺 ${st.missing ?? 0} 檔</div>
         </div>
         <div class="card">
-          <h2>磁碟分檔</h2>
-          <div class="big">${diskN}</div>
-          <div class="sub">宇宙 ${universeN} · index ${indexN} · manifest ${manifestN} · ${fmtBytes(manifestBytes)}</div>
+          <h2>全量分檔與打包</h2>
+          <div class="big">${manifestN} 檔</div>
+          <div class="sub" style="margin-top:6px;">解壓 ${fmtBytes(manifestBytes)} · 壓縮包 ${fmtBytes(bundleBytes)}</div>
         </div>
         <div class="card">
-          <h2>更新時間</h2>
-          <div class="big" style="font-size:1.05rem">${esc(st.updatedAt || "—")}</div>
-          <div class="sub">下市／極短 ${st.delistedOrShort ?? "—"}</div>
+          <h2>美股與期權狀態</h2>
+          <div class="big" style="color:var(--ok);">已就緒</div>
+          <div class="sub" style="margin-top:6px;">SPY 期權牆 + 4 大指數 + M7</div>
         </div>
       `;
-      document.getElementById("statusRaw").textContent = JSON.stringify(st, null, 2);
-      document.getElementById("updatedAt").textContent = `更新：${new Date().toLocaleString()}`;
+
+      // Render Options Wall
+      if (wall) {
+        document.getElementById('optionsWallContent').innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <span style="font-size:1.1rem; font-weight:700;">${esc(wall.underlyingLabel || 'SPY')} 現價: $${wall.spot?.toFixed(2) || '—'}</span>
+              <span class="chip warn" style="margin-left:8px;">到期日: ${esc(wall.contractDate || '—')}</span>
+            </div>
+            <div style="font-size:0.75rem; color:var(--muted);">更新: ${esc(wall.updatedAt || '—')}</div>
+          </div>
+          <div class="wall-grid">
+            <div class="wall-metric"><div class="lbl">Call Wall (壓力牆)</div><div class="val" style="color:var(--bad);">$${wall.callWall || '—'}</div></div>
+            <div class="wall-metric"><div class="lbl">Put Wall (支撐牆)</div><div class="val" style="color:var(--ok);">$${wall.putWall || '—'}</div></div>
+            <div class="wall-metric"><div class="lbl">Max Pain (最大痛點)</div><div class="val" style="color:var(--purple);">$${wall.maxPain || '—'}</div></div>
+            <div class="wall-metric"><div class="lbl">PCR (沽購比)</div><div class="val">${wall.pcr?.toFixed(2) || '—'}</div></div>
+          </div>
+        `;
+      } else {
+        document.getElementById('optionsWallContent').innerHTML = '<div style="color:var(--muted);">尚無期權牆資料</div>';
+      }
+
+      // Render US Indices
+      if (usIdx) {
+        const keys = Object.keys(usIdx);
+        document.getElementById('usIndicesGrid').innerHTML = keys.map(k => {
+          const bars = usIdx[k] || [];
+          const last = bars[bars.length - 1] || {};
+          const prev = bars[bars.length - 2] || {};
+          const change = (last.close && prev.close) ? (last.close - prev.close) : 0;
+          const changePct = prev.close ? (change / prev.close * 100).toFixed(2) : '0.00';
+          const isUp = change >= 0;
+          return `
+            <div class="card" style="background:var(--card-elevated);">
+              <div style="font-size:0.8rem; color:var(--muted);">${esc(k)}</div>
+              <div style="font-size:1.3rem; font-weight:700; margin:4px 0;">$${last.close?.toFixed(2) || '—'}</div>
+              <div style="font-size:0.78rem; color:${isUp ? 'var(--ok)' : 'var(--bad)'}; font-weight:600;">
+                ${isUp ? '+' : ''}${change.toFixed(2)} (${isUp ? '+' : ''}${changePct}%)
+              </div>
+              <div style="font-size:0.72rem; color:var(--muted); margin-top:4px;">${last.date || ''} · ${bars.length} 筆日 K</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      document.getElementById('statusRaw').textContent = JSON.stringify(st, null, 2);
     }
 
-    function filteredCatalog() {
-      const q = invQuery.trim().toLowerCase();
-      if (!q) return invCatalog;
-      return invCatalog.filter(it =>
-        String(it.id).toLowerCase().includes(q) || String(it.name).toLowerCase().includes(q)
-      );
+    async function loadCatalog() {
+      const [dir, usDir] = await Promise.all([
+        fetchJson(RAW + '/stock_directory.json').catch(() => []),
+        fetchJson(RAW + '/us_stock_directory.json').catch(() => [])
+      ]);
+      const combined = [
+        ...(Array.isArray(usDir) ? usDir : []),
+        ...(Array.isArray(dir) ? dir : [])
+      ];
+      invCatalog = combined;
+      renderUSStocksTable(usDir);
+    }
+
+    function renderUSStocksTable(usList) {
+      if (!Array.isArray(usList) || !usList.length) {
+        document.getElementById('usStocksTable').innerHTML = '<div style="color:var(--muted);">尚無美股標的</div>';
+        return;
+      }
+      document.getElementById('usStocksTable').innerHTML = `
+        <table>
+          <thead><tr><th>代碼</th><th>名稱</th><th>分類</th><th>資料檔案</th></tr></thead>
+          <tbody>
+            ${usList.map(s => `
+              <tr>
+                <td style="font-weight:700; color:var(--accent);">${esc(s.stockId)}</td>
+                <td>${esc(s.stockName)}</td>
+                <td>${chip('warn', s.industry || '美股')}</td>
+                <td><a href="${CDN}/metrics/${encodeURIComponent(s.stockId)}.json" target="_blank" style="color:var(--accent); text-decoration:none;">metrics/${esc(s.stockId)}.json</a></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
     }
 
     async function loadInventory({ append = false, reset = false } = {}) {
       if (reset) invOffset = 0;
-      const all = filteredCatalog();
-      invTotal = all.length;
-      const slice = all.slice(append ? invOffset : 0, (append ? invOffset : 0) + INV_PAGE);
-      document.getElementById("invSummary").textContent =
-        `分檔 ${invCatalog.length} · 本頁抽驗 ${slice.length}` + (invQuery ? ` · 篩選 ${invTotal}` : "");
+      const q = invQuery.trim().toLowerCase();
+      const filtered = q ? invCatalog.filter(it => (it.stockId || it.id || '').toLowerCase().includes(q) || (it.stockName || it.name || '').toLowerCase().includes(q)) : invCatalog;
+      invTotal = filtered.length;
+      const slice = filtered.slice(invOffset, invOffset + INV_PAGE);
 
-      const list = document.getElementById("invList");
-      if (!append) list.innerHTML = `<div class="inv-item side-meta">驗證中…</div>`;
+      const list = document.getElementById('invList');
+      if (!append) list.innerHTML = '<div class="inv-item" style="color:var(--muted);">載入驗證中...</div>';
 
       const results = [];
-      const concurrency = 6;
-      let cursor = 0;
-      async function worker() {
-        while (cursor < slice.length) {
-          const i = cursor++;
-          const it = slice[i];
-          try {
-            const rows = await fetchJson(`${CDN}/metrics/${encodeURIComponent(it.id)}.json`).catch(() =>
-              fetchJson(`${RAW}/metrics/${encodeURIComponent(it.id)}.json`)
-            );
-            const v = verifyRows(rows, it.id);
-            results[i] = { ...it, ...v, bytes: JSON.stringify(rows).length };
-          } catch (e) {
-            results[i] = { ...it, tone: "bad", label: "缺檔／讀取失敗", rows: 0, first: null, last: it.latestDate, bytes: 0 };
-          }
+      for (const it of slice) {
+        const sid = it.stockId || it.id;
+        const sname = it.stockName || it.name || sid;
+        const stype = it.industry || it.type || '';
+        try {
+          const rows = await fetchJson(CDN + '/metrics/' + encodeURIComponent(sid) + '.json').catch(() => fetchJson(RAW + '/metrics/' + encodeURIComponent(sid) + '.json'));
+          const last = rows[rows.length - 1];
+          results.push({ id: sid, name: sname, type: stype, tone: 'ok', label: `${rows.length} 日`, lastDate: last?.date || '—', bytes: JSON.stringify(rows).length });
+        } catch (e) {
+          results.push({ id: sid, name: sname, type: stype, tone: 'warn', label: '待更新', lastDate: '—', bytes: 0 });
         }
       }
-      await Promise.all(Array.from({ length: Math.min(concurrency, slice.length || 1) }, () => worker()));
 
-      const html = results.map(it => `
+      const html = results.map(r => `
         <div class="inv-item">
           <div class="inv-top">
             <div>
-              <div class="inv-name">${esc(it.name)}</div>
-              <div class="inv-id">${esc(it.id)} · ${esc(it.type || "")}</div>
+              <div class="inv-name">${esc(r.name)}</div>
+              <div class="inv-id">${esc(r.id)} · ${esc(r.type)}</div>
             </div>
-            ${chip(it.tone || "warn", it.label || "—")}
+            ${chip(r.tone, r.label)}
           </div>
-          <div class="inv-detail">
-            ${it.rows ?? 0} 日 · ${esc(it.first || "—")} → ${esc(it.last || "—")}
-            · ~${fmtBytes(it.bytes || 0)}
-          </div>
+          <div class="inv-detail">最新: ${esc(r.lastDate)} · ~${fmtBytes(r.bytes)}</div>
         </div>
-      `).join("");
+      `).join('');
 
-      if (append) list.insertAdjacentHTML("beforeend", html);
-      else list.innerHTML = html || `<div class="inv-item side-meta">尚無分檔，或沒有符合搜尋的項目</div>`;
+      if (append) list.insertAdjacentHTML('beforeend', html);
+      else list.innerHTML = html || '<div class="inv-item" style="color:var(--muted);">無符合項目</div>';
 
-      invOffset = (append ? invOffset : 0) + slice.length;
-      document.getElementById("invMoreBtn").disabled = invOffset >= invTotal;
-
-      const ok = results.filter(r => r.tone === "ok").length;
-      const warn = results.filter(r => r.tone === "warn").length;
-      const bad = results.filter(r => r.tone === "bad").length;
-      document.getElementById("invSummary").textContent =
-        `分檔 ${invCatalog.length} · 已抽驗 ${invOffset}/${invTotal} · 本頁 通過 ${ok} · 警告 ${warn} · 失敗 ${bad}`;
+      invOffset += slice.length;
+      document.getElementById('invMoreBtn').disabled = invOffset >= invTotal;
+      document.getElementById('invSummary').textContent = `共 ${invCatalog.length} 標的 · 已驗證 ${invOffset}/${invTotal}`;
     }
 
-    async function loadAll() {
-      try {
-        document.getElementById("error").hidden = true;
-        await loadStats();
-        await loadInventory({ reset: true });
-      } catch (e) {
-        document.getElementById("error").hidden = false;
-        document.getElementById("error").textContent = e.message;
-      }
+    async function init() {
+      await loadStats();
+      await loadCatalog();
+      await loadInventory({ reset: true });
     }
 
-    function schedule() {
-      clearInterval(timer);
-      if (document.getElementById("autoRefresh").checked) {
-        timer = setInterval(loadAll, 30000);
-      }
-    }
-
-    document.getElementById("refreshBtn").onclick = () => loadAll();
-    document.getElementById("autoRefresh").onchange = schedule;
-    document.getElementById("invRefreshBtn").onclick = () => loadInventory({ reset: true });
-    document.getElementById("invMoreBtn").onclick = () => loadInventory({ append: true });
-    let searchTimer;
-    document.getElementById("invSearch").addEventListener("input", (e) => {
+    document.getElementById('refreshBtn').onclick = () => init();
+    document.getElementById('invRefreshBtn').onclick = () => loadInventory({ reset: true });
+    document.getElementById('invMoreBtn').onclick = () => loadInventory({ append: true });
+    document.getElementById('invSearch').oninput = (e) => {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => {
-        invQuery = e.target.value.trim();
+        invQuery = e.target.value;
         loadInventory({ reset: true });
       }, 250);
-    });
+    };
 
-    loadAll();
-    schedule();
+    init();
+    setInterval(() => {
+      if (document.getElementById('autoRefresh').checked) init();
+    }, 30000);
   </script>
 </body>
 </html>
