@@ -7,3 +7,5 @@ tools/fetch_dashboard.pid
 tools/fetch_dashboard.log
 dist/
 _taiwan_stock_info.json
+tools/finnhub_tokens.local.json
+tools/finnhub_tokens.local.txt
