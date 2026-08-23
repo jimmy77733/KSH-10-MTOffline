@@ -1,0 +1,206 @@
+[
+  {
+    "stockId": "SPY",
+    "stockName": "SPY",
+    "type": "us",
+    "industry": "Index"
+  },
+  {
+    "stockId": "QQQ",
+    "stockName": "QQQ",
+    "type": "us",
+    "industry": "Index"
+  },
+  {
+    "stockId": "DIA",
+    "stockName": "DIA",
+    "type": "us",
+    "industry": "Index"
+  },
+  {
+    "stockId": "VIX",
+    "stockName": "^VIX",
+    "type": "us",
+    "industry": "Index"
+  },
+  {
+    "stockId": "AAPL",
+    "stockName": "AAPL",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "MSFT",
+    "stockName": "MSFT",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "GOOGL",
+    "stockName": "GOOGL",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "AMZN",
+    "stockName": "AMZN",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "NVDA",
+    "stockName": "NVDA",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "META",
+    "stockName": "META",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "TSLA",
+    "stockName": "TSLA",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "XLK",
+    "stockName": "XLK",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLF",
+    "stockName": "XLF",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLV",
+    "stockName": "XLV",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLY",
+    "stockName": "XLY",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLC",
+    "stockName": "XLC",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLI",
+    "stockName": "XLI",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLP",
+    "stockName": "XLP",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLE",
+    "stockName": "XLE",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLRE",
+    "stockName": "XLRE",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLU",
+    "stockName": "XLU",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLB",
+    "stockName": "XLB",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "AMD",
+    "stockName": "AMD",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "INTC",
+    "stockName": "INTC",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "COIN",
+    "stockName": "COIN",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "PLTR",
+    "stockName": "PLTR",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "TSM",
+    "stockName": "TSM",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "AVGO",
+    "stockName": "AVGO",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "ARM",
+    "stockName": "ARM",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "SMCI",
+    "stockName": "SMCI",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "BABA",
+    "stockName": "BABA",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "NFLX",
+    "stockName": "NFLX",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "BRK.B",
+    "stockName": "BRK-B",
+    "type": "us",
+    "industry": "Tech/Popular"
+  },
+  {
+    "stockId": "COST",
+    "stockName": "COST",
+    "type": "us",
+    "industry": "Tech/Popular"
+  }
+]

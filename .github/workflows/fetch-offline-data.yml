@@ -14,6 +14,10 @@ on:
   schedule:
     # 每 6 小時續跑；公開 repo Actions 單次最長約 6h，靠排程疊加跑完 ~3000 檔
     - cron: "15 */6 * * *"
+    # 台灣股市：週一~五 UTC 00:30 = 台灣 08:30（開盤前 30 分）
+    - cron: "30 0 * * 1-5"
+    # 台灣股市：週一~五 UTC 05:30 = 台灣 13:30（收盤後立即更新）
+    - cron: "30 5 * * 1-5"
 
 concurrency:
   group: mt-offline-fetch
@@ -99,6 +103,7 @@ jobs:
             echo "No data changes to commit"
           else
             git commit -m "chore: update offline data ($(date -u +%Y-%m-%dT%H:%MZ)) [skip ci]"
+            git pull --rebase origin main || true
             git push
           fi
           if [ -f status.json ]; then
