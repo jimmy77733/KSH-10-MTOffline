@@ -50,14 +50,5 @@ Workflow：**Update MT offline data**
 
 進度寫回 `metrics/` + `status.json`；App 從 jsDelivr / Pages 下載。全市場靠多次排程疊加跑齊。
 
-### 本機 vs Actions（會不會衝突？）
-
-| | 本機 | GitHub Actions |
-|--|------|----------------|
-| 腳本 | `scripts/fetch_historical_data.py` | 同檔同步到 `tools/fetch_historical_data.py` |
-| 輸出 | `dist/offline/` | 公開 repo 根目錄 `metrics/` 等 |
-| Token | `finmind_tokens.local.json` | Secret `FINMIND_TOKENS_JSON` |
-
-**可同時跑，但會搶同一組 FinMind 每小時額度**，更容易集體 402，整體更慢。建議同一時間只留一邊在抓；本機進度要進雲端需再 `git push`／同步。
 
 資料來源：[FinMind](https://finmindtrade.com/)
