@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 """
 fetch_us_offline_data.py
-美股離線歷史資料抓取器（獨立運作，不影響台股流程）
-- 抓取美股四大指數 (SPY, QQQ, DIA, ^VIX) 歷史日 K
-- 抓取美股科技權值 (M7) 及 11 大板塊 ETF 歷史日 K
-- 抓取與計算 SPY 期權牆 (Options Wall / Max Pain / GEX)
+美股前 200 大標的歷史資料高效抓取器（支援多組 Finnhub Token 自動輪替、多執行緒並行與限流管理）
+- 抓取美股前 200 大權值股、大盤指數 (SPY, QQQ, DIA, ^VIX) 及板塊 ETF
+- 支援 Finnhub 多 Token 自動輪替 (Round-Robin & Rate Limit 429 故障轉移)
+- 抓取歷史日 K、基本面指標 (PE, PB, 52W, 市值) 與 SPY 期權牆
 - 輸出至 dist/offline 目錄
 """
 
 import json
 import os
 import sys
+import threading
 import time
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 
-# 決定輸出路徑
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 DIST_DIR = os.environ.get("MT_OFFLINE_ROOT", os.path.join(REPO_ROOT, "dist", "offline"))
@@ -25,22 +26,162 @@ METRICS_DIR = os.path.join(DIST_DIR, "metrics")
 os.makedirs(DIST_DIR, exist_ok=True)
 os.makedirs(METRICS_DIR, exist_ok=True)
 
-# 抓取清單
-US_INDICES = ["SPY", "QQQ", "DIA", "^VIX"]
-US_M7 = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"]
-US_SECTORS = ["XLK", "XLF", "XLV", "XLY", "XLC", "XLI", "XLP", "XLE", "XLRE", "XLU", "XLB"]
-US_POPULAR = ["AMD", "INTC", "COIN", "PLTR", "TSM", "AVGO", "ARM", "SMCI", "BABA", "NFLX", "BRK-B", "COST"]
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
-ALL_US_SYMBOLS = list(dict.fromkeys(US_INDICES + US_M7 + US_SECTORS + US_POPULAR))
+# 美股前 200 大權值與代表性標的
+US_TOP_UNIVERSE = [
+    # Top Tech & Giants (M7 + Leaders)
+    "AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META", "TSLA", "AVGO", "ORCL", "CRM",
+    "AMD", "ADBE", "CSCO", "IBM", "QCOM", "TXN", "NOW", "AMAT", "INTU", "LRCX",
+    "PANW", "MU", "KLAC", "SNPS", "CDNS", "ADI", "ANET", "NXPI", "MRVL", "FTNT",
+    "PLTR", "ARM", "SMCI", "COIN", "TSM", "BABA", "ASML", "SAP", "PDD", "BIDU",
+    
+    # Financials
+    "BRK.B", "JPM", "V", "MA", "BAC", "WFC", "GS", "MS", "SPGI", "BLK",
+    "PGR", "CB", "MMC", "C", "AXP", "MCO", "ICE", "USB", "PNC", "TRV",
+    "AON", "CME", "SCHW", "AFL", "MET", "ALL", "BK", "COF", "PRU", "AIG",
+    
+    # Healthcare & Biotech
+    "LLY", "UNH", "JNJ", "ABBV", "MRK", "TMO", "ABT", "ISRG", "PFE", "AMGN",
+    "SYK", "VRTX", "ELV", "BMY", "MDT", "BSX", "CI", "GILD", "REGN", "ZTS",
+    "BDX", "CVS", "HCA", "MCK", "COR", "EW", "HUM", "DXCM", "IDXX", "IQV",
+    
+    # Consumer & Retail
+    "COST", "HD", "PG", "WMT", "NFLX", "KO", "PEP", "MCD", "DIS", "PM",
+    "BKNG", "LOW", "UBER", "TJX", "MDLZ", "MO", "CL", "NKE", "TGT", "SBUX",
+    "ABNB", "MAR", "LULU", "HLT", "ORLY", "AZO", "CMG", "DG", "DLTR", "ROST",
+    
+    # Industrials & Defense
+    "GE", "CAT", "HON", "RTX", "UNP", "DE", "ETN", "LMT", "BA", "ITW",
+    "TDG", "WM", "SHW", "EMR", "PH", "GD", "NOC", "CSX", "NSC", "PCAR",
+    "TT", "URI", "FDX", "UPS", "CP", "CNI", "CARR", "OTIS", "JCI", "CMI",
+    
+    # Energy
+    "XOM", "CVX", "COP", "EOG", "SLB", "MPC", "PSX", "VLO", "OXY", "HES",
+    "WMB", "KMI", "OKE", "HAL", "BKR", "FANG", "TRGP", "DVN", "EQT", "MRO",
+    
+    # Communication & Telecom
+    "VZ", "CMCSA", "T", "TMUS", "CHTR", "EA", "TTWO", "WBD", "OMC", "IPG",
+    
+    # Utilities & Real Estate
+    "NEE", "SO", "DUK", "CEG", "SRE", "AEP", "VST", "D", "EXC", "XEL",
+    "PLD", "AMT", "EQIX", "CCI", "PSA", "O", "WELL", "DLR", "SPG", "VICI",
+    
+    # Materials
+    "LIN", "APD", "ECL", "FCX", "NEM", "NUE", "CTVA", "DOW", "DD", "ALB",
+    
+    # Major Market & Sector ETFs
+    "SPY", "QQQ", "DIA", "IWM", "VIX", "VOO", "VTI", "XLK", "XLF", "XLV",
+    "XLY", "XLC", "XLI", "XLP", "XLE", "XLRE", "XLU", "XLB", "SMH", "SOXX",
+    "ARKK", "TLT", "GLD", "SLV", "USO", "HYG", "LQD", "EEM", "EFA", "VNQ"
+]
 
-USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+
+class FinnhubTokenManager:
+    """管理多組 Finnhub Token 輪替與配額防護 (Thread-safe)"""
+    def __init__(self):
+        self.tokens = []
+        self.current_idx = 0
+        self.cooldowns = {}
+        self.lock = threading.Lock()
+        self.load_tokens()
+        
+    def load_tokens(self):
+        token_file = os.path.join(SCRIPT_DIR, "finnhub_tokens.local.json")
+        if not os.path.exists(token_file):
+            token_file = os.path.join(REPO_ROOT, "tools", "finnhub_tokens.local.json")
+            
+        if os.path.exists(token_file):
+            try:
+                with open(token_file, "r", encoding="utf-8") as f:
+                    entries = json.load(f)
+                    for item in entries:
+                        if isinstance(item, dict) and item.get("token"):
+                            self.tokens.append(item["token"].strip())
+                        elif isinstance(item, str) and item.strip():
+                            self.tokens.append(item.strip())
+            except Exception as e:
+                print(f"[Warning] Failed to load {token_file}: {e}")
+                
+        env_tokens = os.environ.get("FINNHUB_TOKENS_JSON", "").strip()
+        if env_tokens:
+            try:
+                entries = json.loads(env_tokens)
+                for item in entries:
+                    if isinstance(item, dict) and item.get("token"):
+                        self.tokens.append(item["token"].strip())
+                    elif isinstance(item, str) and item.strip():
+                        self.tokens.append(item.strip())
+            except Exception:
+                pass
+                
+        env_csv = os.environ.get("FINNHUB_TOKENS", "").strip()
+        if env_csv:
+            for t in env_csv.split(","):
+                if t.strip():
+                    self.tokens.append(t.strip())
+                    
+        self.tokens = list(dict.fromkeys(self.tokens))
+        print(f"Loaded {len(self.tokens)} Finnhub tokens for rotation.")
+
+    def get_active_token(self) -> str:
+        with self.lock:
+            if not self.tokens:
+                return ""
+            now = time.time()
+            for _ in range(len(self.tokens)):
+                t = self.tokens[self.current_idx]
+                if self.cooldowns.get(t, 0) <= now:
+                    self.current_idx = (self.current_idx + 1) % len(self.tokens)
+                    return t
+                self.current_idx = (self.current_idx + 1) % len(self.tokens)
+                
+            earliest_token = min(self.cooldowns, key=self.cooldowns.get)
+            return earliest_token
+
+    def mark_rate_limited(self, token: str):
+        with self.lock:
+            print(f"  [RateLimit] Token ...{token[-6:]} hit limit (429), cooling down for 30s.")
+            self.cooldowns[token] = time.time() + 30
+
+    def query(self, endpoint: str, params: dict = None) -> dict:
+        params = params or {}
+        token = self.get_active_token()
+        if not token:
+            return {}
+            
+        params["token"] = token
+        url = f"https://finnhub.io/api/v1/{endpoint}?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        
+        for attempt in range(max(len(self.tokens), 2)):
+            try:
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    if resp.status == 200:
+                        return json.loads(resp.read().decode("utf-8"))
+            except urllib.error.HTTPError as e:
+                if e.code == 429:
+                    self.mark_rate_limited(token)
+                    token = self.get_active_token()
+                    params["token"] = token
+                    url = f"https://finnhub.io/api/v1/{endpoint}?" + urllib.parse.urlencode(params)
+                    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+                    continue
+                break
+            except Exception:
+                break
+        return {}
 
 
 def fetch_yahoo_chart(symbol: str, range_str: str = "3y") -> list:
-    """抓取歷史日 K 線 (優先使用 yfinance)"""
+    """抓取歷史日 K 線"""
+    clean_sym = symbol.replace(".B", "-B").replace(".A", "-A")
+    if symbol == "VIX" and not symbol.startswith("^"):
+        clean_sym = "^VIX"
+        
     try:
         import yfinance as yf
-        ticker = yf.Ticker(symbol)
+        ticker = yf.Ticker(clean_sym)
         df = ticker.history(period=range_str)
         if not df.empty:
             bars = []
@@ -62,11 +203,10 @@ def fetch_yahoo_chart(symbol: str, range_str: str = "3y") -> list:
                     "volume": v
                 })
             return bars
-    except Exception as e:
+    except Exception:
         pass
 
-    # Fallback to direct URL fetch
-    encoded = urllib.parse.quote(symbol, safe="")
+    encoded = urllib.parse.quote(clean_sym, safe="")
     hosts = ["query1.finance.yahoo.com", "query2.finance.yahoo.com"]
     for host in hosts:
         url = f"https://{host}/v8/finance/chart/{encoded}?interval=1d&range={range_str}"
@@ -121,7 +261,6 @@ def fetch_yahoo_chart(symbol: str, range_str: str = "3y") -> list:
         except Exception:
             continue
             
-    print(f"  [Warning] Failed to fetch chart for {symbol}")
     return []
 
 
@@ -130,7 +269,6 @@ def fetch_and_save_options_wall():
     print("Fetching US options wall (SPY)...")
     try:
         import yfinance as yf
-        import pandas as pd
         import numpy as np
         
         spy = yf.Ticker("SPY")
@@ -204,73 +342,99 @@ def fetch_and_save_options_wall():
             print(f"  ✓ Saved {out_file}")
             return wall_data
     except Exception as e:
-        print(f"  [Info] yfinance computation skipped or not available ({e}), checking fallback...")
+        print(f"  [Info] yfinance options calculation skipped ({e})")
+
+
+def process_single_stock(symbol: str, finnhub: FinnhubTokenManager):
+    clean_id = symbol.replace("^", "").replace("-", ".")
+    
+    # 1. 抓取日 K 線 (3 年)
+    bars = fetch_yahoo_chart(symbol, range_str="3y")
+    if bars:
+        metric_file = os.path.join(METRICS_DIR, f"{clean_id}.json")
+        with open(metric_file, "w", encoding="utf-8") as f:
+            json.dump(bars, f, ensure_ascii=False, separators=(',', ':'))
+            
+    # 2. 透過 Finnhub 輪替 Token 抓取公司基本面
+    profile = {}
+    metric = {}
+    if finnhub.tokens and not symbol.startswith(("XL", "SMH", "SOXX", "IWM", "VOO", "VTI", "GLD", "SLV", "USO", "TLT")):
+        profile = finnhub.query("stock/profile2", {"symbol": clean_id.replace(".B", "")}) or {}
+        metric = finnhub.query("stock/metric", {"symbol": clean_id.replace(".B", ""), "metric": "all"}) or {}
         
-    out_file = os.path.join(DIST_DIR, "us_options_wall.json")
-    if not os.path.exists(out_file):
-        fallback_wall = {
-            "optionId": "SPY",
-            "underlyingLabel": "S&P 500 ETF",
-            "spot": 560.0,
-            "contractDate": datetime.now().strftime("%Y-%m-%d"),
-            "callWall": 570.0,
-            "putWall": 550.0,
-            "maxPain": 560.0,
-            "pcr": 0.85,
-            "levels": [
-                {"strike": 570.0, "kind": "CW", "label": "Call Wall", "magnitude": 12000.0},
-                {"strike": 550.0, "kind": "PW", "label": "Put Wall", "magnitude": 15000.0},
-                {"strike": 560.0, "kind": "MP", "label": "Max Pain", "magnitude": 0.0}
-            ],
-            "profile": [[540.0, -10000], [550.0, -15000], [560.0, 8000], [570.0, 12000], [580.0, 6000]],
-            "updatedAt": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-            "isApproximateGEX": True
+    comp_name = profile.get("name") or symbol
+    industry = profile.get("finnhubIndustry") or ("ETF" if symbol.startswith("X") or symbol in ["SPY", "QQQ", "DIA", "IWM"] else "US Equity")
+    
+    dir_entry = {
+        "stockId": clean_id,
+        "stockName": f"{clean_id} ({comp_name})" if comp_name != clean_id else clean_id,
+        "type": "us",
+        "industry": industry
+    }
+    
+    metric_entry = None
+    if metric.get("metric"):
+        m = metric["metric"]
+        metric_entry = {
+            "pe": m.get("peNormalizedAnnual") or m.get("peTTM"),
+            "pb": m.get("pbAnnual") or m.get("pbTTM"),
+            "beta": m.get("beta"),
+            "52High": m.get("52WeekHigh"),
+            "52Low": m.get("52WeekLow"),
+            "marketCap": profile.get("marketCapitalization")
         }
-        with open(out_file, "w", encoding="utf-8") as f:
-            json.dump(fallback_wall, f, ensure_ascii=False, separators=(',', ':'))
-        print(f"  ✓ Created fallback {out_file}")
+        
+    return clean_id, symbol, bars, dir_entry, metric_entry
 
 
 def main():
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting US Offline Data Fetch...")
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Starting Concurrent US Top 200 Offline Data Fetch...")
+    finnhub = FinnhubTokenManager()
     
     index_history = {}
     us_directory = []
+    us_metrics_summary = {}
     
-    for symbol in ALL_US_SYMBOLS:
-        print(f"Fetching {symbol}...")
-        bars = fetch_yahoo_chart(symbol, range_str="3y")
-        if bars:
-            clean_id = symbol.replace("^", "").replace("-", ".")
-            metric_file = os.path.join(METRICS_DIR, f"{clean_id}.json")
-            with open(metric_file, "w", encoding="utf-8") as f:
-                json.dump(bars, f, ensure_ascii=False, separators=(',', ':'))
+    total = len(US_TOP_UNIVERSE)
+    print(f"Target Universe: {total} US stocks & ETFs. Concurrency: 8 workers.")
+    
+    start_time = time.time()
+    completed = 0
+    
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        futures = {executor.submit(process_single_stock, sym, finnhub): sym for sym in US_TOP_UNIVERSE}
+        for future in as_completed(futures):
+            completed += 1
+            sym = futures[future]
+            try:
+                clean_id, symbol, bars, dir_entry, metric_entry = future.result()
+                us_directory.append(dir_entry)
+                if metric_entry:
+                    us_metrics_summary[clean_id] = metric_entry
+                    
+                if symbol in ["SPY", "QQQ", "DIA", "VIX", "^VIX"] and bars:
+                    idx_key = "SPY" if symbol == "SPY" else ("QQQ" if symbol == "QQQ" else ("DIA" if symbol == "DIA" else "VIX"))
+                    index_history[idx_key] = [
+                        {
+                            "date": b["date"],
+                            "open": b["open"],
+                            "high": b["high"],
+                            "low": b["low"],
+                            "close": b["close"],
+                            "volume": b["volume"]
+                        }
+                        for b in bars
+                    ]
+                print(f"[{completed}/{total}] ✓ {sym} ({len(bars)} bars)")
+            except Exception as e:
+                print(f"[{completed}/{total}] ✗ Error processing {sym}: {e}")
                 
-            if symbol in US_INDICES:
-                index_history[symbol] = [
-                    {
-                        "date": b["date"],
-                        "open": b["open"],
-                        "high": b["high"],
-                        "low": b["low"],
-                        "close": b["close"],
-                        "volume": b["volume"]
-                    }
-                    for b in bars
-                ]
-                
-            us_directory.append({
-                "stockId": clean_id,
-                "stockName": symbol,
-                "type": "us",
-                "industry": "Index" if symbol in US_INDICES else ("ETF" if symbol in US_SECTORS or symbol == "SPY" else "Tech/Popular")
-            })
-            print(f"  ✓ {clean_id}: {len(bars)} bars -> {metric_file}")
-        else:
-            print(f"  ✗ {symbol}: No data")
-            
-        time.sleep(0.3)
-        
+    elapsed = time.time() - start_time
+    print(f"All {total} US stocks processed in {elapsed:.1f}s.")
+    
+    # 按照字典順序排序
+    us_directory.sort(key=lambda x: x["stockId"])
+    
     # 儲存美股四大指數總檔
     index_file = os.path.join(DIST_DIR, "us_index_history.json")
     with open(index_file, "w", encoding="utf-8") as f:
@@ -283,10 +447,17 @@ def main():
         json.dump(us_directory, f, ensure_ascii=False, indent=2)
     print(f"✓ Wrote {us_dir_file} ({len(us_directory)} symbols)")
     
+    # 儲存基本面指標摘要
+    if us_metrics_summary:
+        metric_sum_file = os.path.join(DIST_DIR, "us_metrics_summary.json")
+        with open(metric_sum_file, "w", encoding="utf-8") as f:
+            json.dump(us_metrics_summary, f, ensure_ascii=False, indent=2)
+        print(f"✓ Wrote {metric_sum_file} ({len(us_metrics_summary)} companies)")
+        
     # 抓取 SPY 期權牆
     fetch_and_save_options_wall()
     
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] US Offline Data Fetch Complete!")
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] US Top 200 Offline Data Fetch Complete!")
 
 
 if __name__ == "__main__":

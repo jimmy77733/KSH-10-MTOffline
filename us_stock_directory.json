@@ -1,91 +1,1429 @@
 [
   {
-    "stockId": "SPY",
-    "stockName": "SPY",
+    "stockId": "AAPL",
+    "stockName": "AAPL (Apple Inc)",
     "type": "us",
-    "industry": "Index"
+    "industry": "Technology"
   },
   {
-    "stockId": "QQQ",
-    "stockName": "QQQ",
+    "stockId": "ABBV",
+    "stockName": "ABBV (AbbVie Inc)",
     "type": "us",
-    "industry": "Index"
+    "industry": "Biotechnology"
+  },
+  {
+    "stockId": "ABNB",
+    "stockName": "ABNB (Airbnb Inc)",
+    "type": "us",
+    "industry": "Hotels, Restaurants & Leisure"
+  },
+  {
+    "stockId": "ABT",
+    "stockName": "ABT (Abbott Laboratories)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "ADBE",
+    "stockName": "ADBE (Adobe Inc)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "ADI",
+    "stockName": "ADI (Analog Devices Inc)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "AEP",
+    "stockName": "AEP (American Electric Power Company Inc)",
+    "type": "us",
+    "industry": "Utilities"
+  },
+  {
+    "stockId": "AFL",
+    "stockName": "AFL (Aflac Inc)",
+    "type": "us",
+    "industry": "Insurance"
+  },
+  {
+    "stockId": "AIG",
+    "stockName": "AIG (American International Group Inc)",
+    "type": "us",
+    "industry": "Insurance"
+  },
+  {
+    "stockId": "ALB",
+    "stockName": "ALB (Albemarle Corp)",
+    "type": "us",
+    "industry": "Chemicals"
+  },
+  {
+    "stockId": "ALL",
+    "stockName": "ALL (Allstate Corp)",
+    "type": "us",
+    "industry": "Insurance"
+  },
+  {
+    "stockId": "AMAT",
+    "stockName": "AMAT (Applied Materials Inc)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "AMD",
+    "stockName": "AMD (Advanced Micro Devices Inc)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "AMGN",
+    "stockName": "AMGN (Amgen Inc)",
+    "type": "us",
+    "industry": "Biotechnology"
+  },
+  {
+    "stockId": "AMT",
+    "stockName": "AMT (American Tower Corp)",
+    "type": "us",
+    "industry": "Real Estate"
+  },
+  {
+    "stockId": "AMZN",
+    "stockName": "AMZN (Amazon.com Inc)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "ANET",
+    "stockName": "ANET (Arista Networks Inc)",
+    "type": "us",
+    "industry": "Communications"
+  },
+  {
+    "stockId": "AON",
+    "stockName": "AON (Aon PLC)",
+    "type": "us",
+    "industry": "Insurance"
+  },
+  {
+    "stockId": "APD",
+    "stockName": "APD (Air Products and Chemicals Inc)",
+    "type": "us",
+    "industry": "Chemicals"
+  },
+  {
+    "stockId": "ARKK",
+    "stockName": "ARKK",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "ARM",
+    "stockName": "ARM (Arm Holdings PLC)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "ASML",
+    "stockName": "ASML (ASML Holding NV)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "AVGO",
+    "stockName": "AVGO (Broadcom Inc)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "AXP",
+    "stockName": "AXP (American Express Co)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "AZO",
+    "stockName": "AZO (Autozone Inc)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "BA",
+    "stockName": "BA (Boeing Co)",
+    "type": "us",
+    "industry": "Aerospace & Defense"
+  },
+  {
+    "stockId": "BABA",
+    "stockName": "BABA (Alibaba Group Holding Ltd)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "BAC",
+    "stockName": "BAC (Bank of America Corp)",
+    "type": "us",
+    "industry": "Banking"
+  },
+  {
+    "stockId": "BDX",
+    "stockName": "BDX (Becton Dickinson and Co)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "BIDU",
+    "stockName": "BIDU (Baidu Inc)",
+    "type": "us",
+    "industry": "Media"
+  },
+  {
+    "stockId": "BK",
+    "stockName": "BK",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "BKNG",
+    "stockName": "BKNG (Booking Holdings Inc)",
+    "type": "us",
+    "industry": "Hotels, Restaurants & Leisure"
+  },
+  {
+    "stockId": "BKR",
+    "stockName": "BKR (Baker Hughes Co)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "BLK",
+    "stockName": "BLK (BlackRock Inc)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "BMY",
+    "stockName": "BMY (Bristol-Myers Squibb Co)",
+    "type": "us",
+    "industry": "Pharmaceuticals"
+  },
+  {
+    "stockId": "BRK.B",
+    "stockName": "BRK.B",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "BSX",
+    "stockName": "BSX (Boston Scientific Corp)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "C",
+    "stockName": "C (Citigroup Inc)",
+    "type": "us",
+    "industry": "Banking"
+  },
+  {
+    "stockId": "CARR",
+    "stockName": "CARR (Carrier Global Corp)",
+    "type": "us",
+    "industry": "Building"
+  },
+  {
+    "stockId": "CAT",
+    "stockName": "CAT (Caterpillar Inc)",
+    "type": "us",
+    "industry": "Machinery"
+  },
+  {
+    "stockId": "CB",
+    "stockName": "CB (Chubb Limited)",
+    "type": "us",
+    "industry": "Insurance"
+  },
+  {
+    "stockId": "CCI",
+    "stockName": "CCI (Crown Castle Inc)",
+    "type": "us",
+    "industry": "Real Estate"
+  },
+  {
+    "stockId": "CDNS",
+    "stockName": "CDNS (Cadence Design Systems Inc)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "CEG",
+    "stockName": "CEG (Constellation Energy Corp)",
+    "type": "us",
+    "industry": "Utilities"
+  },
+  {
+    "stockId": "CHTR",
+    "stockName": "CHTR (Charter Communications Inc)",
+    "type": "us",
+    "industry": "Media"
+  },
+  {
+    "stockId": "CI",
+    "stockName": "CI (Cigna Group)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "CL",
+    "stockName": "CL (Colgate-Palmolive Co)",
+    "type": "us",
+    "industry": "Consumer products"
+  },
+  {
+    "stockId": "CMCSA",
+    "stockName": "CMCSA (Comcast Corp)",
+    "type": "us",
+    "industry": "Telecommunication"
+  },
+  {
+    "stockId": "CME",
+    "stockName": "CME (CME Group Inc)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "CMG",
+    "stockName": "CMG (Chipotle Mexican Grill Inc)",
+    "type": "us",
+    "industry": "Hotels, Restaurants & Leisure"
+  },
+  {
+    "stockId": "CMI",
+    "stockName": "CMI (Cummins Inc)",
+    "type": "us",
+    "industry": "Machinery"
+  },
+  {
+    "stockId": "CNI",
+    "stockName": "CNI (Canadian National Railway Co)",
+    "type": "us",
+    "industry": "Road & Rail"
+  },
+  {
+    "stockId": "COF",
+    "stockName": "COF (Capital One Financial Corp)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "COIN",
+    "stockName": "COIN (Coinbase Global Inc)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "COP",
+    "stockName": "COP (ConocoPhillips)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "COR",
+    "stockName": "COR (Cencora Inc)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "COST",
+    "stockName": "COST (Costco Wholesale Corp)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "CP",
+    "stockName": "CP (Canadian Pacific Kansas City Ltd)",
+    "type": "us",
+    "industry": "Road & Rail"
+  },
+  {
+    "stockId": "CRM",
+    "stockName": "CRM (Salesforce Inc)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "CSCO",
+    "stockName": "CSCO (Cisco Systems Inc)",
+    "type": "us",
+    "industry": "Communications"
+  },
+  {
+    "stockId": "CSX",
+    "stockName": "CSX (CSX Corp)",
+    "type": "us",
+    "industry": "Road & Rail"
+  },
+  {
+    "stockId": "CTVA",
+    "stockName": "CTVA (Corteva Inc)",
+    "type": "us",
+    "industry": "Chemicals"
+  },
+  {
+    "stockId": "CVS",
+    "stockName": "CVS (CVS Health Corp)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "CVX",
+    "stockName": "CVX (Chevron Corp)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "D",
+    "stockName": "D (Dominion Energy Inc)",
+    "type": "us",
+    "industry": "Utilities"
+  },
+  {
+    "stockId": "DD",
+    "stockName": "DD (Dupont De Nemours Inc)",
+    "type": "us",
+    "industry": "Chemicals"
+  },
+  {
+    "stockId": "DE",
+    "stockName": "DE (Deere & Co)",
+    "type": "us",
+    "industry": "Machinery"
+  },
+  {
+    "stockId": "DG",
+    "stockName": "DG (Dollar General Corp)",
+    "type": "us",
+    "industry": "Retail"
   },
   {
     "stockId": "DIA",
     "stockName": "DIA",
     "type": "us",
-    "industry": "Index"
+    "industry": "ETF"
   },
   {
-    "stockId": "VIX",
-    "stockName": "^VIX",
+    "stockId": "DIS",
+    "stockName": "DIS (Walt Disney Co)",
     "type": "us",
-    "industry": "Index"
+    "industry": "Media"
   },
   {
-    "stockId": "AAPL",
-    "stockName": "AAPL",
+    "stockId": "DLR",
+    "stockName": "DLR (Digital Realty Trust Inc)",
     "type": "us",
-    "industry": "Tech/Popular"
+    "industry": "Real Estate"
   },
   {
-    "stockId": "MSFT",
-    "stockName": "MSFT",
+    "stockId": "DLTR",
+    "stockName": "DLTR (Dollar Tree Inc)",
     "type": "us",
-    "industry": "Tech/Popular"
+    "industry": "Retail"
+  },
+  {
+    "stockId": "DOW",
+    "stockName": "DOW (Dow Inc)",
+    "type": "us",
+    "industry": "Chemicals"
+  },
+  {
+    "stockId": "DUK",
+    "stockName": "DUK (Duke Energy Corp)",
+    "type": "us",
+    "industry": "Utilities"
+  },
+  {
+    "stockId": "DVN",
+    "stockName": "DVN (Devon Energy Corp)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "DXCM",
+    "stockName": "DXCM (Dexcom Inc)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "EA",
+    "stockName": "EA (Electronic Arts Inc)",
+    "type": "us",
+    "industry": "Media"
+  },
+  {
+    "stockId": "ECL",
+    "stockName": "ECL (Ecolab Inc)",
+    "type": "us",
+    "industry": "Chemicals"
+  },
+  {
+    "stockId": "EEM",
+    "stockName": "EEM",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "EFA",
+    "stockName": "EFA",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "ELV",
+    "stockName": "ELV (Elevance Health Inc)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "EMR",
+    "stockName": "EMR (Emerson Electric Co)",
+    "type": "us",
+    "industry": "Electrical Equipment"
+  },
+  {
+    "stockId": "EOG",
+    "stockName": "EOG (EOG Resources Inc)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "EQIX",
+    "stockName": "EQIX (Equinix Inc)",
+    "type": "us",
+    "industry": "Real Estate"
+  },
+  {
+    "stockId": "EQT",
+    "stockName": "EQT (EQT Corp)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "ETN",
+    "stockName": "ETN (Eaton Corporation PLC)",
+    "type": "us",
+    "industry": "Electrical Equipment"
+  },
+  {
+    "stockId": "EW",
+    "stockName": "EW (Edwards Lifesciences Corp)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "EXC",
+    "stockName": "EXC (Exelon Corp)",
+    "type": "us",
+    "industry": "Utilities"
+  },
+  {
+    "stockId": "FANG",
+    "stockName": "FANG (Diamondback Energy Inc)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "FCX",
+    "stockName": "FCX (Freeport-McMoRan Inc)",
+    "type": "us",
+    "industry": "Metals & Mining"
+  },
+  {
+    "stockId": "FDX",
+    "stockName": "FDX (FedEx Corp)",
+    "type": "us",
+    "industry": "Logistics & Transportation"
+  },
+  {
+    "stockId": "FTNT",
+    "stockName": "FTNT (Fortinet Inc)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "GD",
+    "stockName": "GD (General Dynamics Corp)",
+    "type": "us",
+    "industry": "Aerospace & Defense"
+  },
+  {
+    "stockId": "GE",
+    "stockName": "GE (General Electric Co)",
+    "type": "us",
+    "industry": "Aerospace & Defense"
+  },
+  {
+    "stockId": "GILD",
+    "stockName": "GILD (Gilead Sciences, Inc)",
+    "type": "us",
+    "industry": "Biotechnology"
+  },
+  {
+    "stockId": "GLD",
+    "stockName": "GLD",
+    "type": "us",
+    "industry": "US Equity"
   },
   {
     "stockId": "GOOGL",
-    "stockName": "GOOGL",
+    "stockName": "GOOGL (Alphabet Inc)",
     "type": "us",
-    "industry": "Tech/Popular"
+    "industry": "Media"
   },
   {
-    "stockId": "AMZN",
-    "stockName": "AMZN",
+    "stockId": "GS",
+    "stockName": "GS (Goldman Sachs Group Inc)",
     "type": "us",
-    "industry": "Tech/Popular"
+    "industry": "Financial Services"
   },
   {
-    "stockId": "NVDA",
-    "stockName": "NVDA",
+    "stockId": "HAL",
+    "stockName": "HAL (Halliburton Co)",
     "type": "us",
-    "industry": "Tech/Popular"
+    "industry": "Energy"
+  },
+  {
+    "stockId": "HCA",
+    "stockName": "HCA (HCA Healthcare Inc)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "HD",
+    "stockName": "HD (Home Depot Inc)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "HES",
+    "stockName": "HES (Hess Corp)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "HLT",
+    "stockName": "HLT (Hilton Worldwide Holdings Inc)",
+    "type": "us",
+    "industry": "Hotels, Restaurants & Leisure"
+  },
+  {
+    "stockId": "HON",
+    "stockName": "HON (Honeywell International Inc)",
+    "type": "us",
+    "industry": "Industrial Conglomerates"
+  },
+  {
+    "stockId": "HUM",
+    "stockName": "HUM (Humana Inc)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "HYG",
+    "stockName": "HYG",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "IBM",
+    "stockName": "IBM (International Business Machines Corp)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "ICE",
+    "stockName": "ICE (Intercontinental Exchange Inc)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "IDXX",
+    "stockName": "IDXX (IDEXX Laboratories Inc)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "INTU",
+    "stockName": "INTU (Intuit Inc)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "IPG",
+    "stockName": "IPG (Interpublic Group of Companies Inc)",
+    "type": "us",
+    "industry": "Media"
+  },
+  {
+    "stockId": "IQV",
+    "stockName": "IQV (IQVIA Holdings Inc)",
+    "type": "us",
+    "industry": "Life Sciences Tools & Services"
+  },
+  {
+    "stockId": "ISRG",
+    "stockName": "ISRG (Intuitive Surgical Inc)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "ITW",
+    "stockName": "ITW (Illinois Tool Works Inc)",
+    "type": "us",
+    "industry": "Machinery"
+  },
+  {
+    "stockId": "IWM",
+    "stockName": "IWM",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "JCI",
+    "stockName": "JCI (Johnson Controls International PLC)",
+    "type": "us",
+    "industry": "Building"
+  },
+  {
+    "stockId": "JNJ",
+    "stockName": "JNJ (Johnson & Johnson)",
+    "type": "us",
+    "industry": "Pharmaceuticals"
+  },
+  {
+    "stockId": "JPM",
+    "stockName": "JPM (JPMorgan Chase & Co)",
+    "type": "us",
+    "industry": "Banking"
+  },
+  {
+    "stockId": "KLAC",
+    "stockName": "KLAC (KLA Corp)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "KMI",
+    "stockName": "KMI (Kinder Morgan Inc)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "KO",
+    "stockName": "KO (Coca-Cola Co)",
+    "type": "us",
+    "industry": "Beverages"
+  },
+  {
+    "stockId": "LIN",
+    "stockName": "LIN (Linde PLC)",
+    "type": "us",
+    "industry": "Chemicals"
+  },
+  {
+    "stockId": "LLY",
+    "stockName": "LLY (Eli Lilly and Co)",
+    "type": "us",
+    "industry": "Pharmaceuticals"
+  },
+  {
+    "stockId": "LMT",
+    "stockName": "LMT (Lockheed Martin Corp)",
+    "type": "us",
+    "industry": "Aerospace & Defense"
+  },
+  {
+    "stockId": "LOW",
+    "stockName": "LOW (Lowe's Companies Inc)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "LQD",
+    "stockName": "LQD",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "LRCX",
+    "stockName": "LRCX (Lam Research Corp)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "LULU",
+    "stockName": "LULU (Lululemon Athletica Inc)",
+    "type": "us",
+    "industry": "Textiles, Apparel & Luxury Goods"
+  },
+  {
+    "stockId": "MA",
+    "stockName": "MA (Mastercard Inc)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "MAR",
+    "stockName": "MAR (Marriott International Inc)",
+    "type": "us",
+    "industry": "Hotels, Restaurants & Leisure"
+  },
+  {
+    "stockId": "MCD",
+    "stockName": "MCD (McDonald's Corp)",
+    "type": "us",
+    "industry": "Hotels, Restaurants & Leisure"
+  },
+  {
+    "stockId": "MCK",
+    "stockName": "MCK (McKesson Corp)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "MCO",
+    "stockName": "MCO (Moody's Corp)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "MDLZ",
+    "stockName": "MDLZ (Mondelez International Inc)",
+    "type": "us",
+    "industry": "Food Products"
+  },
+  {
+    "stockId": "MDT",
+    "stockName": "MDT (Medtronic PLC)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "MET",
+    "stockName": "MET (MetLife Inc)",
+    "type": "us",
+    "industry": "Insurance"
   },
   {
     "stockId": "META",
-    "stockName": "META",
+    "stockName": "META (Meta Platforms Inc)",
     "type": "us",
-    "industry": "Tech/Popular"
+    "industry": "Media"
+  },
+  {
+    "stockId": "MMC",
+    "stockName": "MMC",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "MO",
+    "stockName": "MO (Altria Group Inc)",
+    "type": "us",
+    "industry": "Tobacco"
+  },
+  {
+    "stockId": "MPC",
+    "stockName": "MPC (Marathon Petroleum Corp)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "MRK",
+    "stockName": "MRK (Merck & Co Inc)",
+    "type": "us",
+    "industry": "Pharmaceuticals"
+  },
+  {
+    "stockId": "MRO",
+    "stockName": "MRO (Marathon Oil Corp)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "MRVL",
+    "stockName": "MRVL (Marvell Technology Inc)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "MS",
+    "stockName": "MS (Morgan Stanley)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "MSFT",
+    "stockName": "MSFT (Microsoft Corp)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "MU",
+    "stockName": "MU (Micron Technology Inc)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "NEE",
+    "stockName": "NEE (Nextera Energy Inc)",
+    "type": "us",
+    "industry": "Utilities"
+  },
+  {
+    "stockId": "NEM",
+    "stockName": "NEM (Newmont Corporation)",
+    "type": "us",
+    "industry": "Metals & Mining"
+  },
+  {
+    "stockId": "NFLX",
+    "stockName": "NFLX (Netflix Inc)",
+    "type": "us",
+    "industry": "Media"
+  },
+  {
+    "stockId": "NKE",
+    "stockName": "NKE (Nike Inc)",
+    "type": "us",
+    "industry": "Textiles, Apparel & Luxury Goods"
+  },
+  {
+    "stockId": "NOC",
+    "stockName": "NOC (Northrop Grumman Corp)",
+    "type": "us",
+    "industry": "Aerospace & Defense"
+  },
+  {
+    "stockId": "NOW",
+    "stockName": "NOW (ServiceNow Inc)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "NSC",
+    "stockName": "NSC (Norfolk Southern Corp)",
+    "type": "us",
+    "industry": "Road & Rail"
+  },
+  {
+    "stockId": "NUE",
+    "stockName": "NUE (Nucor Corp)",
+    "type": "us",
+    "industry": "Metals & Mining"
+  },
+  {
+    "stockId": "NVDA",
+    "stockName": "NVDA (NVIDIA Corp)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "NXPI",
+    "stockName": "NXPI (NXP Semiconductors NV)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "O",
+    "stockName": "O (Realty Income Corp)",
+    "type": "us",
+    "industry": "Real Estate"
+  },
+  {
+    "stockId": "OKE",
+    "stockName": "OKE (ONEOK Inc)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "OMC",
+    "stockName": "OMC (Omnicom Group Inc)",
+    "type": "us",
+    "industry": "Media"
+  },
+  {
+    "stockId": "ORCL",
+    "stockName": "ORCL (Oracle Corp)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "ORLY",
+    "stockName": "ORLY (O'Reilly Automotive Inc)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "OTIS",
+    "stockName": "OTIS (Otis Worldwide Corp)",
+    "type": "us",
+    "industry": "Machinery"
+  },
+  {
+    "stockId": "OXY",
+    "stockName": "OXY (Occidental Petroleum Corp)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "PANW",
+    "stockName": "PANW (Palo Alto Networks Inc)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "PCAR",
+    "stockName": "PCAR (Paccar Inc)",
+    "type": "us",
+    "industry": "Machinery"
+  },
+  {
+    "stockId": "PDD",
+    "stockName": "PDD (PDD Holdings Inc)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "PEP",
+    "stockName": "PEP (PepsiCo Inc)",
+    "type": "us",
+    "industry": "Beverages"
+  },
+  {
+    "stockId": "PFE",
+    "stockName": "PFE (Pfizer Inc)",
+    "type": "us",
+    "industry": "Pharmaceuticals"
+  },
+  {
+    "stockId": "PG",
+    "stockName": "PG (Procter & Gamble Co)",
+    "type": "us",
+    "industry": "Consumer products"
+  },
+  {
+    "stockId": "PGR",
+    "stockName": "PGR (Progressive Corp)",
+    "type": "us",
+    "industry": "Insurance"
+  },
+  {
+    "stockId": "PH",
+    "stockName": "PH (Parker-Hannifin Corp)",
+    "type": "us",
+    "industry": "Machinery"
+  },
+  {
+    "stockId": "PLD",
+    "stockName": "PLD (Prologis Inc)",
+    "type": "us",
+    "industry": "Real Estate"
+  },
+  {
+    "stockId": "PLTR",
+    "stockName": "PLTR (Palantir Technologies Inc)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "PM",
+    "stockName": "PM (Philip Morris International Inc)",
+    "type": "us",
+    "industry": "Tobacco"
+  },
+  {
+    "stockId": "PNC",
+    "stockName": "PNC (PNC Financial Services Group Inc)",
+    "type": "us",
+    "industry": "Banking"
+  },
+  {
+    "stockId": "PRU",
+    "stockName": "PRU (Prudential Financial Inc)",
+    "type": "us",
+    "industry": "Insurance"
+  },
+  {
+    "stockId": "PSA",
+    "stockName": "PSA (Public Storage)",
+    "type": "us",
+    "industry": "Real Estate"
+  },
+  {
+    "stockId": "PSX",
+    "stockName": "PSX (Phillips 66)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "QCOM",
+    "stockName": "QCOM (Qualcomm Inc)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "QQQ",
+    "stockName": "QQQ",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "REGN",
+    "stockName": "REGN (Regeneron Pharmaceuticals Inc)",
+    "type": "us",
+    "industry": "Biotechnology"
+  },
+  {
+    "stockId": "ROST",
+    "stockName": "ROST (Ross Stores Inc)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "RTX",
+    "stockName": "RTX (RTX Corp)",
+    "type": "us",
+    "industry": "Aerospace & Defense"
+  },
+  {
+    "stockId": "SAP",
+    "stockName": "SAP (SAP SE)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "SBUX",
+    "stockName": "SBUX (Starbucks Corp)",
+    "type": "us",
+    "industry": "Hotels, Restaurants & Leisure"
+  },
+  {
+    "stockId": "SCHW",
+    "stockName": "SCHW (Charles Schwab Corp)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "SHW",
+    "stockName": "SHW (Sherwin-Williams Co)",
+    "type": "us",
+    "industry": "Chemicals"
+  },
+  {
+    "stockId": "SLB",
+    "stockName": "SLB (SLB NV)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "SLV",
+    "stockName": "SLV",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "SMCI",
+    "stockName": "SMCI (Super Micro Computer Inc)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "SMH",
+    "stockName": "SMH",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "SNPS",
+    "stockName": "SNPS (Synopsys Inc)",
+    "type": "us",
+    "industry": "Technology"
+  },
+  {
+    "stockId": "SO",
+    "stockName": "SO (Southern Co)",
+    "type": "us",
+    "industry": "Utilities"
+  },
+  {
+    "stockId": "SOXX",
+    "stockName": "SOXX",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "SPG",
+    "stockName": "SPG (Simon Property Group Inc)",
+    "type": "us",
+    "industry": "Real Estate"
+  },
+  {
+    "stockId": "SPGI",
+    "stockName": "SPGI (S&P Global Inc)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "SPY",
+    "stockName": "SPY",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "SRE",
+    "stockName": "SRE (Sempra)",
+    "type": "us",
+    "industry": "Utilities"
+  },
+  {
+    "stockId": "SYK",
+    "stockName": "SYK (Stryker Corp)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "T",
+    "stockName": "T (AT&T Inc)",
+    "type": "us",
+    "industry": "Telecommunication"
+  },
+  {
+    "stockId": "TDG",
+    "stockName": "TDG (TransDigm Group Inc)",
+    "type": "us",
+    "industry": "Aerospace & Defense"
+  },
+  {
+    "stockId": "TGT",
+    "stockName": "TGT (Target Corp)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "TJX",
+    "stockName": "TJX (TJX Companies Inc)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "TLT",
+    "stockName": "TLT",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "TMO",
+    "stockName": "TMO (Thermo Fisher Scientific Inc)",
+    "type": "us",
+    "industry": "Life Sciences Tools & Services"
+  },
+  {
+    "stockId": "TMUS",
+    "stockName": "TMUS (T-Mobile US Inc)",
+    "type": "us",
+    "industry": "Telecommunication"
+  },
+  {
+    "stockId": "TRGP",
+    "stockName": "TRGP (Targa Resources Corp)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "TRV",
+    "stockName": "TRV (Travelers Companies Inc)",
+    "type": "us",
+    "industry": "Insurance"
   },
   {
     "stockId": "TSLA",
-    "stockName": "TSLA",
+    "stockName": "TSLA (Tesla Inc)",
     "type": "us",
-    "industry": "Tech/Popular"
+    "industry": "Automobiles"
   },
   {
-    "stockId": "XLK",
-    "stockName": "XLK",
+    "stockId": "TSM",
+    "stockName": "TSM (Taiwan Semiconductor Manufacturing Co Ltd)",
     "type": "us",
-    "industry": "ETF"
+    "industry": "Semiconductors"
   },
   {
-    "stockId": "XLF",
-    "stockName": "XLF",
+    "stockId": "TT",
+    "stockName": "TT (Trane Technologies PLC)",
     "type": "us",
-    "industry": "ETF"
+    "industry": "Building"
   },
   {
-    "stockId": "XLV",
-    "stockName": "XLV",
+    "stockId": "TTWO",
+    "stockName": "TTWO (Take-Two Interactive Software Inc)",
     "type": "us",
-    "industry": "ETF"
+    "industry": "Media"
   },
   {
-    "stockId": "XLY",
-    "stockName": "XLY",
+    "stockId": "TXN",
+    "stockName": "TXN (Texas Instruments Inc)",
+    "type": "us",
+    "industry": "Semiconductors"
+  },
+  {
+    "stockId": "UBER",
+    "stockName": "UBER (Uber Technologies Inc)",
+    "type": "us",
+    "industry": "Road & Rail"
+  },
+  {
+    "stockId": "UNH",
+    "stockName": "UNH (UnitedHealth Group Inc)",
+    "type": "us",
+    "industry": "Health Care"
+  },
+  {
+    "stockId": "UNP",
+    "stockName": "UNP (Union Pacific Corp)",
+    "type": "us",
+    "industry": "Road & Rail"
+  },
+  {
+    "stockId": "UPS",
+    "stockName": "UPS (United Parcel Service Inc)",
+    "type": "us",
+    "industry": "Logistics & Transportation"
+  },
+  {
+    "stockId": "URI",
+    "stockName": "URI (United Rentals Inc)",
+    "type": "us",
+    "industry": "Trading Companies & Distributors"
+  },
+  {
+    "stockId": "USB",
+    "stockName": "USB (US Bancorp)",
+    "type": "us",
+    "industry": "Banking"
+  },
+  {
+    "stockId": "USO",
+    "stockName": "USO",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "V",
+    "stockName": "V (Visa Inc)",
+    "type": "us",
+    "industry": "Financial Services"
+  },
+  {
+    "stockId": "VICI",
+    "stockName": "VICI (VICI Properties Inc)",
+    "type": "us",
+    "industry": "Real Estate"
+  },
+  {
+    "stockId": "VIX",
+    "stockName": "VIX",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "VLO",
+    "stockName": "VLO (Valero Energy Corp)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "VNQ",
+    "stockName": "VNQ",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "VOO",
+    "stockName": "VOO",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "VRTX",
+    "stockName": "VRTX (Vertex Pharmaceuticals Inc)",
+    "type": "us",
+    "industry": "Biotechnology"
+  },
+  {
+    "stockId": "VST",
+    "stockName": "VST (Vistra Corp)",
+    "type": "us",
+    "industry": "Utilities"
+  },
+  {
+    "stockId": "VTI",
+    "stockName": "VTI",
+    "type": "us",
+    "industry": "US Equity"
+  },
+  {
+    "stockId": "VZ",
+    "stockName": "VZ (Verizon Communications Inc)",
+    "type": "us",
+    "industry": "Telecommunication"
+  },
+  {
+    "stockId": "WBD",
+    "stockName": "WBD (Warner Bros Discovery Inc)",
+    "type": "us",
+    "industry": "Media"
+  },
+  {
+    "stockId": "WELL",
+    "stockName": "WELL (Welltower Inc)",
+    "type": "us",
+    "industry": "Real Estate"
+  },
+  {
+    "stockId": "WFC",
+    "stockName": "WFC (Wells Fargo & Co)",
+    "type": "us",
+    "industry": "Banking"
+  },
+  {
+    "stockId": "WM",
+    "stockName": "WM (Waste Management Inc)",
+    "type": "us",
+    "industry": "Commercial Services & Supplies"
+  },
+  {
+    "stockId": "WMB",
+    "stockName": "WMB (Williams Companies Inc)",
+    "type": "us",
+    "industry": "Energy"
+  },
+  {
+    "stockId": "WMT",
+    "stockName": "WMT (Walmart Inc)",
+    "type": "us",
+    "industry": "Retail"
+  },
+  {
+    "stockId": "XEL",
+    "stockName": "XEL (Xcel Energy Inc)",
+    "type": "us",
+    "industry": "Utilities"
+  },
+  {
+    "stockId": "XLB",
+    "stockName": "XLB",
     "type": "us",
     "industry": "ETF"
   },
@@ -96,20 +1434,32 @@
     "industry": "ETF"
   },
   {
+    "stockId": "XLE",
+    "stockName": "XLE",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
+    "stockId": "XLF",
+    "stockName": "XLF",
+    "type": "us",
+    "industry": "ETF"
+  },
+  {
     "stockId": "XLI",
     "stockName": "XLI",
     "type": "us",
     "industry": "ETF"
   },
   {
-    "stockId": "XLP",
-    "stockName": "XLP",
+    "stockId": "XLK",
+    "stockName": "XLK",
     "type": "us",
     "industry": "ETF"
   },
   {
-    "stockId": "XLE",
-    "stockName": "XLE",
+    "stockId": "XLP",
+    "stockName": "XLP",
     "type": "us",
     "industry": "ETF"
   },
@@ -126,81 +1476,27 @@
     "industry": "ETF"
   },
   {
-    "stockId": "XLB",
-    "stockName": "XLB",
+    "stockId": "XLV",
+    "stockName": "XLV",
     "type": "us",
     "industry": "ETF"
   },
   {
-    "stockId": "AMD",
-    "stockName": "AMD",
+    "stockId": "XLY",
+    "stockName": "XLY",
     "type": "us",
-    "industry": "Tech/Popular"
+    "industry": "ETF"
   },
   {
-    "stockId": "INTC",
-    "stockName": "INTC",
+    "stockId": "XOM",
+    "stockName": "XOM (Exxonmobil Holdings Corp)",
     "type": "us",
-    "industry": "Tech/Popular"
+    "industry": "Energy"
   },
   {
-    "stockId": "COIN",
-    "stockName": "COIN",
+    "stockId": "ZTS",
+    "stockName": "ZTS (Zoetis Inc)",
     "type": "us",
-    "industry": "Tech/Popular"
-  },
-  {
-    "stockId": "PLTR",
-    "stockName": "PLTR",
-    "type": "us",
-    "industry": "Tech/Popular"
-  },
-  {
-    "stockId": "TSM",
-    "stockName": "TSM",
-    "type": "us",
-    "industry": "Tech/Popular"
-  },
-  {
-    "stockId": "AVGO",
-    "stockName": "AVGO",
-    "type": "us",
-    "industry": "Tech/Popular"
-  },
-  {
-    "stockId": "ARM",
-    "stockName": "ARM",
-    "type": "us",
-    "industry": "Tech/Popular"
-  },
-  {
-    "stockId": "SMCI",
-    "stockName": "SMCI",
-    "type": "us",
-    "industry": "Tech/Popular"
-  },
-  {
-    "stockId": "BABA",
-    "stockName": "BABA",
-    "type": "us",
-    "industry": "Tech/Popular"
-  },
-  {
-    "stockId": "NFLX",
-    "stockName": "NFLX",
-    "type": "us",
-    "industry": "Tech/Popular"
-  },
-  {
-    "stockId": "BRK.B",
-    "stockName": "BRK-B",
-    "type": "us",
-    "industry": "Tech/Popular"
-  },
-  {
-    "stockId": "COST",
-    "stockName": "COST",
-    "type": "us",
-    "industry": "Tech/Popular"
+    "industry": "Pharmaceuticals"
   }
 ]
