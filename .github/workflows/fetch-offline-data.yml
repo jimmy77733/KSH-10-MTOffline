@@ -30,6 +30,10 @@ jobs:
   fetch:
     runs-on: ubuntu-latest
     timeout-minutes: 360
+    env:
+      # 排程沒有 workflow_dispatch inputs，依 cron 明確決定要更新的市場。
+      RUN_TW: ${{ github.event_name != 'schedule' && github.event.inputs.market != 'us' || github.event_name == 'schedule' && (github.event.schedule == '30 0 * * 1-5' || github.event.schedule == '30 5 * * 1-5' || github.event.schedule == '15 */6 * * *') }}
+      RUN_US: ${{ github.event_name != 'schedule' && github.event.inputs.market != 'tw' || github.event_name == 'schedule' && (github.event.schedule == '30 20 * * 1-5' || github.event.schedule == '15 */6 * * *') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,7 +48,7 @@ jobs:
           pip install yfinance pandas numpy requests urllib3
 
       - name: Fetch US Offline Data & Options Wall
-        if: ${{ github.event.inputs.market != 'tw' }}
+        if: ${{ env.RUN_US == 'true' }}
         env:
           MT_OFFLINE_ROOT: ${{ github.workspace }}
           MT_REPO_ROOT: ${{ github.workspace }}
@@ -52,7 +56,7 @@ jobs:
           python3 -u tools/fetch_us_offline_data.py || echo "US fetch completed with warnings"
 
       - name: Write FinMind tokens
-        if: ${{ github.event.inputs.market != 'us' && (env.FINMIND_TOKENS_JSON != '' || env.FINMIND_TOKENS != '') }}
+        if: ${{ env.RUN_TW == 'true' && (env.FINMIND_TOKENS_JSON != '' || env.FINMIND_TOKENS != '') }}
         env:
           FINMIND_TOKENS_JSON: ${{ secrets.FINMIND_TOKENS_JSON }}
           FINMIND_TOKENS: ${{ secrets.FINMIND_TOKENS }}
@@ -85,7 +89,7 @@ jobs:
           PY
 
       - name: Fetch TW Data (resume, soft budget)
-        if: ${{ github.event.inputs.market != 'us' && hashFiles('tools/finmind_tokens.local.json') != '' }}
+        if: ${{ env.RUN_TW == 'true' && hashFiles('tools/finmind_tokens.local.json') != '' }}
         env:
           MT_OFFLINE_ROOT: ${{ github.workspace }}
           MT_REPO_ROOT: ${{ github.workspace }}
@@ -113,7 +117,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -f tools/finmind_tokens.local.json tools/finmind_tokens.local.txt
-          git add -A status.json manifest.json metrics_index.json assets.json stock_directory.json dataset_negative_cache.json us_index_history.json us_options_wall.json us_stock_directory.json mt_offline_bundle.zip metrics/ tools/ docs/ || true
+          for path in status.json manifest.json metrics_index.json assets.json stock_directory.json dataset_negative_cache.json us_index_history.json us_options_wall.json us_stock_directory.json us_metrics_summary.json market_wide.json mt_offline_bundle.zip metrics/ tools/ docs/; do
+            if [ -e "$path" ]; then
+              git add -A -- "$path"
+            fi
+          done
           git add incomplete_report.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No data changes to commit"

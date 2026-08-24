@@ -12,15 +12,53 @@ import os
 import sys
 import zipfile
 from datetime import datetime
+from hashlib import sha256
+from zoneinfo import ZoneInfo
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
 DIST_DIR = os.environ.get("MT_OFFLINE_ROOT", os.path.join(REPO_ROOT, "dist", "offline"))
 METRICS_DIR = os.path.join(DIST_DIR, "metrics")
+TAIPEI_TZ = ZoneInfo("Asia/Taipei")
+SIDECAR_FILES = [
+    "metrics_index.json",
+    "assets.json",
+    "stock_directory.json",
+    "us_index_history.json",
+    "us_options_wall.json",
+    "us_stock_directory.json",
+    "us_metrics_summary.json",
+    "market_wide.json",
+]
+
+
+def taipei_now():
+    """回傳明確使用台北時區的目前時間。"""
+    return datetime.now(TAIPEI_TZ)
+
+
+def sidecar_manifest_entries():
+    """建立現有 sidecar 的檔名、大小與 SHA-256 校驗資訊。"""
+    entries = []
+    for name in SIDECAR_FILES:
+        path = os.path.join(DIST_DIR, name)
+        if not os.path.isfile(path):
+            print(f"  ! Sidecar 尚未產生，略過：{name}")
+            continue
+        digest = sha256()
+        with open(path, "rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        entries.append({
+            "name": name,
+            "bytes": os.path.getsize(path),
+            "sha256": digest.hexdigest(),
+        })
+    return entries
 
 
 def main():
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Packaging MT Offline Bundle...")
+    print(f"[{taipei_now().strftime('%Y-%m-%d %H:%M:%S')}] Packaging MT Offline Bundle...")
     
     if not os.path.exists(METRICS_DIR):
         print(f"Error: {METRICS_DIR} does not exist.")
@@ -56,16 +94,17 @@ def main():
             "bytes": file_bytes
         })
         
-    now = datetime.now()
+    now = taipei_now()
     version = now.strftime("%Y%m%d-%H%M")
     
     manifest_data = {
         "version": version,
-        "generatedAt": now.isoformat(timespec="seconds") + "Z",
+        "generatedAt": now.isoformat(timespec="seconds"),
         "totalEntries": len(entries),
         "totalMetricsBytes": total_bytes,
         "bundleZip": "mt_offline_bundle.zip",
-        "entries": entries
+        "entries": entries,
+        "sidecars": sidecar_manifest_entries(),
     }
     
     # 寫入 manifest.json
@@ -78,15 +117,7 @@ def main():
     zip_path = os.path.join(DIST_DIR, "mt_offline_bundle.zip")
     print(f"Creating zip bundle: {zip_path}...")
     
-    sidecar_files = [
-        "manifest.json",
-        "assets.json",
-        "stock_directory.json",
-        "us_index_history.json",
-        "us_options_wall.json",
-        "us_stock_directory.json",
-        "metrics_index.json"
-    ]
+    sidecar_files = ["manifest.json", *SIDECAR_FILES]
     
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as zipf:
         # 加入根目錄 JSON
@@ -109,7 +140,7 @@ def main():
     with open(manifest_path, "w", encoding="utf-8") as f:
         json.dump(manifest_data, f, ensure_ascii=False, indent=2)
         
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Packaging Complete!")
+    print(f"[{taipei_now().strftime('%Y-%m-%d %H:%M:%S')}] Packaging Complete!")
     return 0
 
 
