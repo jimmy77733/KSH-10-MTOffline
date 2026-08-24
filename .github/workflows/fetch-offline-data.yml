@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -113,12 +113,24 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -f tools/finmind_tokens.local.json tools/finmind_tokens.local.txt
-          git add -A status.json manifest.json metrics_index.json assets.json stock_directory.json us_index_history.json us_options_wall.json us_stock_directory.json mt_offline_bundle.zip metrics/ tools/ docs/ || true
+          git add -A status.json manifest.json metrics_index.json assets.json stock_directory.json dataset_negative_cache.json us_index_history.json us_options_wall.json us_stock_directory.json mt_offline_bundle.zip metrics/ tools/ docs/ || true
           git add incomplete_report.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No data changes to commit"
           else
-            git commit -m "chore: automated update TW & US offline data ($(date -u +%Y-%m-%dT%H:%MZ)) [skip ci]"
-            git pull --rebase origin main || true
-            git push
+            git commit -m "維護：自動更新台美離線資料 ($(date -u +%Y-%m-%dT%H:%MZ)) [skip ci]"
+            for attempt in 1 2 3; do
+              if git pull --rebase origin main && git push; then
+                exit 0
+              fi
+              if git rebase --show-current-patch >/dev/null 2>&1; then
+                git rebase --abort
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                echo "同步失敗，10 秒後重試（第 $attempt 次）" >&2
+                sleep 10
+              fi
+            done
+            echo "同步 main 並推送進度連續 3 次失敗，工作流程明確失敗。" >&2
+            exit 1
           fi
