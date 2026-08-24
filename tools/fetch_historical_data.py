@@ -9,9 +9,19 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from hashlib import sha256
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+
+TAIPEI_TZ = ZoneInfo("Asia/Taipei")
+
+
+def taipei_now():
+    """回傳明確使用台北時區的目前時間。"""
+    return datetime.now(TAIPEI_TZ)
 
 
 class _TimestampStdout:
@@ -32,7 +42,7 @@ class _TimestampStdout:
             if self._HAS_TS.match(line) or line.startswith("==="):
                 self._stream.write(line + "\n")
             else:
-                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                ts = taipei_now().strftime("%Y-%m-%d %H:%M:%S")
                 self._stream.write(f"[{ts}] {line}\n")
 
     def flush(self):
@@ -40,7 +50,7 @@ class _TimestampStdout:
             if self._HAS_TS.match(self._buf) or self._buf.startswith("==="):
                 self._stream.write(self._buf)
             else:
-                ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                ts = taipei_now().strftime("%Y-%m-%d %H:%M:%S")
                 self._stream.write(f"[{ts}] {self._buf}")
             self._buf = ""
         self._stream.flush()
@@ -164,14 +174,14 @@ def load_tokens():
 TOKENS = load_tokens()
 MAX_WORKERS = min(MAX_WORKERS, max(len(TOKENS), 1))
 
-end_date = datetime.now()
+end_date = taipei_now()
 start_date = end_date - timedelta(days=1825)
 START_STR = start_date.strftime("%Y-%m-%d")
 END_STR = end_date.strftime("%Y-%m-%d")
 
 metrics_lock = threading.Lock()
 negative_cache_lock = threading.Lock()
-RUN_ID = datetime.now().isoformat(timespec="seconds")
+RUN_ID = taipei_now().isoformat(timespec="seconds")
 MARKET_TYPES = {}
 
 
@@ -567,6 +577,231 @@ def merge_margin(rows, into):
         into[day]["marginDelta"] = today - yday
 
 
+def normalized_dataset_name(value):
+    """正規化 FinMind 的分類名稱，容忍大小寫、底線與空白差異。"""
+    return re.sub(r"[^a-z0-9]", "", str(value or "").lower())
+
+
+def first_float(item, *keys):
+    """依候選欄位順序取第一個可轉成數字的值。"""
+    for key in keys:
+        value = float_val(item.get(key))
+        if value is not None:
+            return value
+    return None
+
+
+def append_institutional_net(bucket, key, net):
+    """累加同日同類法人淨買賣，保留缺值為 null。"""
+    previous = bucket.get(key)
+    bucket[key] = net if previous is None else previous + net
+
+
+def build_institutional_rows(rows, limit=250):
+    """將全市場法人資料分流為外資、投信與自營商淨買賣。"""
+    aliases = {
+        "foreigninvestor": "foreignNet",
+        "foreigndealerself": "foreignNet",
+        "investmenttrust": "trustNet",
+        "dealerself": "dealerNet",
+        "dealerhedging": "dealerNet",
+    }
+    by_date = {}
+    warned_names = set()
+    for item in rows:
+        day = item.get("date")
+        if not day:
+            continue
+        raw_name = item.get("name")
+        name = normalized_dataset_name(raw_name)
+        category = aliases.get(name)
+        if category is None:
+            warning_key = str(raw_name)
+            if warning_key not in warned_names:
+                print(f"[!] market_wide 法人資料遇到未知 name：{raw_name!r}")
+                warned_names.add(warning_key)
+            continue
+        values = by_date.setdefault(
+            day,
+            {"foreignNet": None, "trustNet": None, "dealerNet": None},
+        )
+        net = (first_float(item, "buy") or 0.0) - (first_float(item, "sell") or 0.0)
+        append_institutional_net(values, category, net)
+
+    output = []
+    for day in sorted(by_date)[-limit:]:
+        values = by_date[day]
+        nets = (values["foreignNet"], values["trustNet"], values["dealerNet"])
+        output.append({
+            "date": day,
+            "foreignNet": values["foreignNet"],
+            "trustNet": values["trustNet"],
+            "dealerNet": values["dealerNet"],
+            "totalNet": sum(value for value in nets if value is not None),
+        })
+    return output
+
+
+def build_margin_rows(rows, limit=250):
+    """將全市場信用交易分流為融資與融券，忽略金額類別資料。"""
+    by_date = {}
+    warned_names = set()
+    for item in rows:
+        day = item.get("date")
+        if not day:
+            continue
+        raw_name = item.get("name")
+        name = normalized_dataset_name(raw_name)
+        if name.endswith("money"):
+            continue
+        if name == "marginpurchase":
+            balance_key = "marginBalance"
+            delta_key = "marginDelta"
+            today = first_float(
+                item, "MarginPurchaseTodayBalance", "TodayBalance", "today_balance"
+            )
+            yesterday = first_float(
+                item, "MarginPurchaseYesterdayBalance", "YesterdayBalance", "yesterday_balance"
+            )
+        elif name == "shortsale":
+            balance_key = "shortBalance"
+            delta_key = "shortDelta"
+            today = first_float(
+                item, "ShortSaleTodayBalance", "TodayBalance", "today_balance"
+            )
+            yesterday = first_float(
+                item, "ShortSaleYesterdayBalance", "YesterdayBalance", "yesterday_balance"
+            )
+        else:
+            warning_key = str(raw_name)
+            if warning_key not in warned_names:
+                print(f"[!] market_wide 信用交易資料遇到未知 name：{raw_name!r}")
+                warned_names.add(warning_key)
+            continue
+        values = by_date.setdefault(
+            day,
+            {
+                "marginBalance": None,
+                "marginDelta": None,
+                "shortBalance": None,
+                "shortDelta": None,
+            },
+        )
+        values[balance_key] = today
+        values[delta_key] = None if today is None or yesterday is None else today - yesterday
+
+    return [
+        {"date": day, **by_date[day]}
+        for day in sorted(by_date)[-limit:]
+    ]
+
+
+def futures_contract_sort_key(item):
+    """依契約月份排序台指期，無契約資訊時才以字串穩定排序。"""
+    raw_contract = next(
+        (
+            item.get(key)
+            for key in ("contract_date", "contract", "delivery_month", "expiry_date")
+            if item.get(key) not in (None, "")
+        ),
+        "",
+    )
+    digits = re.sub(r"\D", "", str(raw_contract))
+    return (int(digits) if digits else 99999999, str(raw_contract))
+
+
+def build_index_rows(rows, is_futures=False, cutoff=None):
+    """轉換指數或台指近期貨日 K，輸出固定的 OHLCV schema。"""
+    if is_futures:
+        grouped = defaultdict(list)
+        for item in rows:
+            day = item.get("date")
+            session = str(item.get("trading_session") or "").lower()
+            if day and "after" not in session:
+                grouped[day].append(item)
+        selected = [
+            min(group, key=futures_contract_sort_key)
+            for day, group in sorted(grouped.items())
+            if group
+        ]
+    else:
+        selected = rows
+
+    output = []
+    for item in selected:
+        day = item.get("date")
+        if not day or (cutoff and day < cutoff):
+            continue
+        output.append({
+            "date": day,
+            "open": first_float(item, "open"),
+            "high": first_float(item, "max", "high"),
+            "low": first_float(item, "min", "low"),
+            "close": first_float(item, "close", "Taiex", "TAIEX", "TPEx"),
+            "volume": first_float(item, "Trading_Volume", "volume"),
+        })
+    output.sort(key=lambda item: item["date"])
+    return output
+
+
+def market_wide_index_start(now):
+    """取得三年前同日，閏日則退至二月二十八日。"""
+    try:
+        return now.replace(year=now.year - 3).date().isoformat()
+    except ValueError:
+        return now.replace(year=now.year - 3, month=2, day=28).date().isoformat()
+
+
+def build_market_wide():
+    """抓取並建立全市場 sidecar；失敗時回報狀態但不阻斷主流程。"""
+    try:
+        now = taipei_now()
+        short_start = (now - timedelta(days=400)).date().isoformat()
+        index_start = market_wide_index_start(now)
+
+        institutional = build_institutional_rows(fetch_data(
+            "TaiwanStockInstitutionalInvestorsBuySellTotal", None, short_start, END_STR
+        ))
+        margin = build_margin_rows(fetch_data(
+            "TaiwanStockTotalMarginPurchaseShortSale", None, short_start, END_STR
+        ))
+        indices = {
+            "TAIEX": build_index_rows(fetch_data(
+                "TaiwanStockPrice", "TAIEX", index_start, END_STR
+            ), cutoff=index_start),
+            "TPEx": build_index_rows(fetch_data(
+                "TaiwanStockPrice", "TPEx", index_start, END_STR
+            ), cutoff=index_start),
+            "TX": build_index_rows(fetch_data(
+                "TaiwanFuturesDaily", "TX", index_start, END_STR
+            ), is_futures=True, cutoff=index_start),
+        }
+        dates = [
+            row["date"]
+            for rows_for_kind in (institutional, margin, *indices.values())
+            for row in rows_for_kind
+        ]
+        as_of = max(dates) if dates else None
+        payload = {
+            "generatedAt": now.isoformat(timespec="seconds"),
+            "asOf": as_of,
+            "institutional": institutional,
+            "margin": margin,
+            "indices": indices,
+        }
+        path = os.path.join(DIST_DIR, "market_wide.json")
+        atomic_json_dump(path, payload, ensure_ascii=False, separators=(",", ":"))
+        print(
+            f"Wrote market_wide.json (法人 {len(institutional)}、信用 {len(margin)}、"
+            f"指數 {sum(len(rows) for rows in indices.values())} 筆)"
+        )
+        return {"ok": True, "asOf": as_of}
+    except Exception as exc:
+        error = f"{type(exc).__name__}: {exc}"
+        print(f"[!] market_wide.json 建立失敗：{error}")
+        return {"ok": False, "error": error}
+
+
 def schema_ok(asset_id, dates):
     if not dates:
         return False
@@ -830,17 +1065,6 @@ def package_outputs(assets, directory, index_entries, complete_ids):
             "bytes": os.path.getsize(src),
         })
 
-    manifest = {
-        "version": END_STR,
-        "generatedAt": datetime.now().isoformat(timespec="seconds"),
-        "entries": manifest_entries,
-    }
-    atomic_json_dump(
-        os.path.join(DIST_DIR, "manifest.json"),
-        manifest,
-        ensure_ascii=False,
-        separators=(",", ":"),
-    )
     atomic_json_dump(
         os.path.join(DIST_DIR, "assets.json"),
         assets,
@@ -853,6 +1077,18 @@ def package_outputs(assets, directory, index_entries, complete_ids):
         ensure_ascii=False,
         separators=(",", ":"),
     )
+    manifest = {
+        "version": END_STR,
+        "generatedAt": taipei_now().isoformat(timespec="seconds"),
+        "entries": manifest_entries,
+        "sidecars": sidecar_manifest_entries(),
+    }
+    atomic_json_dump(
+        os.path.join(DIST_DIR, "manifest.json"),
+        manifest,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
 
     seed_count = sync_seed_bundle(assets, directory, complete_ids & BUNDLE_SEED_IDS)
     total_mb = sum(item["bytes"] for item in manifest_entries) / 1e6
@@ -860,9 +1096,58 @@ def package_outputs(assets, directory, index_entries, complete_ids):
     return manifest_entries, seed_count
 
 
+SIDECAR_FILENAMES = (
+    "metrics_index.json",
+    "assets.json",
+    "stock_directory.json",
+    "us_index_history.json",
+    "us_options_wall.json",
+    "us_stock_directory.json",
+    "us_metrics_summary.json",
+    "market_wide.json",
+)
+
+
+def sidecar_manifest_entries():
+    """回傳現有 sidecar 的檔名、位元組與 SHA-256 校驗值。"""
+    entries = []
+    for name in SIDECAR_FILENAMES:
+        path = os.path.join(DIST_DIR, name)
+        if not os.path.isfile(path):
+            print(f"[!] manifest sidecar 尚未產生：{name}")
+            continue
+        digest = sha256()
+        with open(path, "rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        entries.append({
+            "name": name,
+            "bytes": os.path.getsize(path),
+            "sha256": digest.hexdigest(),
+        })
+    return entries
+
+
 def write_status(payload):
     path = os.path.join(DIST_DIR, "status.json")
     atomic_json_dump(path, payload, ensure_ascii=False, indent=2)
+
+
+def write_market_wide_status(result):
+    """在全市場資料完成或失敗後立即更新 status，避免後續流程中斷而漏記。"""
+    path = os.path.join(DIST_DIR, "status.json")
+    payload = {}
+    if os.path.isfile(path):
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                existing = json.load(handle)
+            if isinstance(existing, dict):
+                payload = existing
+        except Exception as exc:
+            print(f"[!] 無法讀取既有 status.json，將重建：{exc}")
+    payload["marketWide"] = result
+    payload["updatedAt"] = taipei_now().isoformat(timespec="seconds")
+    write_status(payload)
 
 
 def write_incomplete_report(gaps):
@@ -1035,6 +1320,8 @@ def main():
     print(f"Wrote dist stock_directory.json ({len(directory)} entries)")
 
     sync_seed_bundle(assets, directory, existing_seed_ids())
+    market_wide_status = build_market_wide()
+    write_market_wide_status(market_wide_status)
 
     calendar_days, calendar_last = ensure_calendar(assets)
     print(f"Calendar {calendar_days[0]} -> {calendar_last} ({len(calendar_days)} sessions)")
@@ -1074,7 +1361,8 @@ def main():
             "missing": len(gaps),
             "coveragePercent": round(coverage, 2),
             "calendarLast": calendar_last,
-            "updatedAt": datetime.now().isoformat(timespec="seconds"),
+            "updatedAt": taipei_now().isoformat(timespec="seconds"),
+            "marketWide": market_wide_status,
         })
         print(
             f"== round {round_idx} complete {len(complete_ids)}/{len(assets)} "
