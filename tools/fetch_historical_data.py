@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import sys
+import tempfile
 import threading
 import time
 import urllib.error
@@ -70,6 +71,7 @@ else:
 
 METRICS_DIR = os.path.join(DIST_DIR, "metrics")
 STOCK_INFO_CACHE = os.path.join(DIST_DIR, "_taiwan_stock_info.json")
+NEGATIVE_CACHE_PATH = os.path.join(DIST_DIR, "dataset_negative_cache.json")
 
 # 可選：同步熱門 seed 進 iOS App（僅 StockCalendar 專案）
 APP_SEED_DIR = os.environ.get("MT_APP_SEED_DIR")
@@ -82,6 +84,28 @@ os.makedirs(DIST_DIR, exist_ok=True)
 os.makedirs(METRICS_DIR, exist_ok=True)
 if SEED_METRICS_DIR:
     os.makedirs(SEED_METRICS_DIR, exist_ok=True)
+
+
+def atomic_json_dump(path, payload, **kwargs):
+    """以同目錄暫存檔原子寫入 JSON，避免中斷時留下截斷檔案。"""
+    directory = os.path.dirname(path) or "."
+    fd, temp_path = tempfile.mkstemp(
+        prefix=f".{os.path.basename(path)}.",
+        suffix=".tmp",
+        dir=directory,
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, **kwargs)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, path)
+    except Exception:
+        try:
+            os.unlink(temp_path)
+        except FileNotFoundError:
+            pass
+        raise
 
 # 進 IPA 的子集（非下載範圍）。完整庫是過濾後的全部台股標的。
 BUNDLE_SEED_IDS = {
@@ -146,6 +170,78 @@ START_STR = start_date.strftime("%Y-%m-%d")
 END_STR = end_date.strftime("%Y-%m-%d")
 
 metrics_lock = threading.Lock()
+negative_cache_lock = threading.Lock()
+RUN_ID = datetime.now().isoformat(timespec="seconds")
+MARKET_TYPES = {}
+
+
+def load_negative_cache():
+    if not os.path.exists(NEGATIVE_CACHE_PATH):
+        return {}
+    try:
+        with open(NEGATIVE_CACHE_PATH, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        return payload if isinstance(payload, dict) else {}
+    except Exception as exc:
+        print(f"Error loading dataset negative cache: {exc}")
+        return {}
+
+
+DATASET_NEGATIVE_CACHE = load_negative_cache()
+
+
+def load_market_types(directory=None):
+    """讀取既有 stock_directory.json，並以本次目錄資料補齊市場別。"""
+    rows = []
+    path = os.path.join(DIST_DIR, "stock_directory.json")
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+            if isinstance(payload, list):
+                rows.extend(payload)
+        except Exception as exc:
+            print(f"Error loading stock directory market types: {exc}")
+    if directory:
+        rows.extend(directory)
+    return {
+        row["stockId"]: row.get("type", "")
+        for row in rows
+        if isinstance(row, dict) and row.get("stockId")
+    }
+
+
+def dataset_is_skipped(asset_id, segment):
+    with negative_cache_lock:
+        entry = DATASET_NEGATIVE_CACHE.get(asset_id, {}).get(segment, {})
+        return (
+            entry.get("emptyRuns", 0) >= 3
+            or entry.get("lastRun") == RUN_ID
+        )
+
+
+def record_dataset_result(asset_id, segment, rows):
+    """記錄連續三次執行皆無資料的 dataset，避免無限重抓。"""
+    with negative_cache_lock:
+        asset_cache = DATASET_NEGATIVE_CACHE.setdefault(asset_id, {})
+        if rows:
+            if segment in asset_cache:
+                del asset_cache[segment]
+            if not asset_cache:
+                DATASET_NEGATIVE_CACHE.pop(asset_id, None)
+        else:
+            entry = asset_cache.setdefault(segment, {})
+            if entry.get("lastRun") != RUN_ID:
+                entry["emptyRuns"] = int(entry.get("emptyRuns", 0)) + 1
+                entry["lastRun"] = RUN_ID
+            if entry.get("emptyRuns", 0) >= 3:
+                entry["notApplicable"] = True
+        atomic_json_dump(
+            NEGATIVE_CACHE_PATH,
+            DATASET_NEGATIVE_CACHE,
+            ensure_ascii=False,
+            indent=2,
+        )
 
 
 class FetchFailed(Exception):
@@ -353,8 +449,12 @@ def rows_for(asset_id, dates):
 def save_asset_metrics(asset_id, dates):
     if not dates:
         return
-    with open(metrics_path(asset_id), "w", encoding="utf-8") as handle:
-        json.dump(rows_for(asset_id, dates), handle, ensure_ascii=False, separators=(",", ":"))
+    atomic_json_dump(
+        metrics_path(asset_id),
+        rows_for(asset_id, dates),
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
 
 
 def load_asset_metrics(asset_id):
@@ -376,6 +476,19 @@ def load_asset_metrics(asset_id):
     except Exception as exc:
         print(f"Error loading metrics for {asset_id}: {exc}")
         return {}
+
+
+def incremental_start_date(dates):
+    """以既有最新日期的下一天為起點；無可用本機資料時回退完整區間。"""
+    valid_days = []
+    for day in dates:
+        try:
+            valid_days.append(datetime.strptime(day, "%Y-%m-%d"))
+        except (TypeError, ValueError):
+            continue
+    if not valid_days:
+        return START_STR
+    return (max(valid_days) + timedelta(days=1)).strftime("%Y-%m-%d")
 
 
 def last_non_null(rows, key):
@@ -468,7 +581,9 @@ def schema_ok(asset_id, dates):
     return any(dates[d].get("close") not in (None,) for d in days)
 
 
-def extra_coverage_ok(dates, key, calendar_last):
+def extra_coverage_ok(asset_id, dates, segment, key, calendar_last):
+    if dataset_is_skipped(asset_id, segment):
+        return True
     rows = sorted(dates.items())
     recent = [vals for day, vals in rows[-RECENT_EXTRA_WINDOW:] if day <= calendar_last]
     if not recent:
@@ -476,7 +591,19 @@ def extra_coverage_ok(dates, key, calendar_last):
     return any(vals.get(key) is not None for vals in recent)
 
 
-def classify_asset(asset, dates, calendar_days, calendar_last):
+def required_segments(asset, market_type):
+    """依標的與市場別回傳必須具備的資料區段。"""
+    segments = ["price"]
+    if asset["type"] not in ("stock", "etf"):
+        return segments
+    if market_type == "emerging":
+        return segments
+    if asset["type"] == "etf" and asset["id"].endswith("B"):
+        return segments + ["inst"]
+    return segments + ["inst", "day", "margin"]
+
+
+def classify_asset(asset, dates, calendar_days, calendar_last, market_type=None):
     """回傳 (ok, missing_segments, note)。missing 為 price/inst/day/margin/schema。"""
     missing = []
     note = None
@@ -503,12 +630,22 @@ def classify_asset(asset, dates, calendar_days, calendar_last):
         price_ok = False
         missing.append("price")
 
-    if asset["type"] in ("stock", "etf") and price_ok and note != "delisted_or_short":
-        if not extra_coverage_ok(dates, "instNet", calendar_last):
+    required = required_segments(
+        asset,
+        market_type if market_type is not None else MARKET_TYPES.get(asset["id"], ""),
+    )
+    if price_ok and note != "delisted_or_short":
+        if "inst" in required and not extra_coverage_ok(
+            asset["id"], dates, "inst", "instNet", calendar_last
+        ):
             missing.append("inst")
-        if not extra_coverage_ok(dates, "dayVol", calendar_last):
+        if "day" in required and not extra_coverage_ok(
+            asset["id"], dates, "day", "dayVol", calendar_last
+        ):
             missing.append("day")
-        if not extra_coverage_ok(dates, "marginDelta", calendar_last):
+        if "margin" in required and not extra_coverage_ok(
+            asset["id"], dates, "margin", "marginDelta", calendar_last
+        ):
             missing.append("margin")
 
     ok = price_ok and not missing
@@ -532,8 +669,7 @@ def get_all_stocks():
     try:
         rows = fetch_data("TaiwanStockInfo", None, None, None)
         if rows:
-            with open(STOCK_INFO_CACHE, "w", encoding="utf-8") as handle:
-                json.dump(rows, handle, ensure_ascii=False)
+            atomic_json_dump(STOCK_INFO_CACHE, rows, ensure_ascii=False)
             print(f"Cached TaiwanStockInfo ({len(rows)} rows)")
             return rows
     except FetchFailed as exc:
@@ -550,21 +686,33 @@ def process_segments(asset, segments):
     asset_id = asset["id"]
     local = load_asset_metrics(asset_id)
     dataset_price = "TaiwanFuturesDaily" if asset["type"] == "futures" else "TaiwanStockPrice"
+    start = incremental_start_date(local)
 
     if "price" in segments or "schema" in segments or not local:
-        prices = fetch_data(dataset_price, asset_id, START_STR, END_STR)
+        prices = fetch_data(dataset_price, asset_id, start, END_STR)
+        record_dataset_result(asset_id, "price", prices)
         merge_prices(asset, prices, local)
         time.sleep(0.05)
 
     if asset["type"] in ("stock", "etf"):
         if "inst" in segments:
-            merge_inst(fetch_data("TaiwanStockInstitutionalInvestorsBuySell", asset_id, START_STR, END_STR), local)
+            rows = fetch_data(
+                "TaiwanStockInstitutionalInvestorsBuySell", asset_id, start, END_STR
+            )
+            record_dataset_result(asset_id, "inst", rows)
+            merge_inst(rows, local)
             time.sleep(0.05)
         if "day" in segments:
-            merge_day_trade(fetch_data("TaiwanStockDayTrading", asset_id, START_STR, END_STR), local)
+            rows = fetch_data("TaiwanStockDayTrading", asset_id, start, END_STR)
+            record_dataset_result(asset_id, "day", rows)
+            merge_day_trade(rows, local)
             time.sleep(0.05)
         if "margin" in segments:
-            merge_margin(fetch_data("TaiwanStockMarginPurchaseShortSale", asset_id, START_STR, END_STR), local)
+            rows = fetch_data(
+                "TaiwanStockMarginPurchaseShortSale", asset_id, start, END_STR
+            )
+            record_dataset_result(asset_id, "margin", rows)
+            merge_margin(rows, local)
             time.sleep(0.05)
 
     return asset_id, local
@@ -607,8 +755,7 @@ def index_entries_for(assets, asset_ids):
 def build_index(assets, complete_ids):
     entries = index_entries_for(assets, complete_ids)
     dest = os.path.join(DIST_DIR, "metrics_index.json")
-    with open(dest, "w", encoding="utf-8") as handle:
-        json.dump(entries, handle, ensure_ascii=False, separators=(",", ":"))
+    atomic_json_dump(dest, entries, ensure_ascii=False, separators=(",", ":"))
     print(f"Wrote dist metrics_index.json ({len(entries)} entries)")
     return entries
 
@@ -642,12 +789,24 @@ def sync_seed_bundle(assets, directory, seed_ids):
         seed_dir.append(row)
     seed_index = index_entries_for(seed_assets or [{"id": i, "name": i, "type": "stock"} for i in present], present)
 
-    with open(os.path.join(RESOURCES_DIR, "assets.json"), "w", encoding="utf-8") as handle:
-        json.dump(seed_assets, handle, ensure_ascii=False, indent=2)
-    with open(os.path.join(RESOURCES_DIR, "stock_directory.json"), "w", encoding="utf-8") as handle:
-        json.dump(seed_dir, handle, ensure_ascii=False, separators=(",", ":"))
-    with open(os.path.join(RESOURCES_DIR, "metrics_index.json"), "w", encoding="utf-8") as handle:
-        json.dump(seed_index, handle, ensure_ascii=False, separators=(",", ":"))
+    atomic_json_dump(
+        os.path.join(RESOURCES_DIR, "assets.json"),
+        seed_assets,
+        ensure_ascii=False,
+        indent=2,
+    )
+    atomic_json_dump(
+        os.path.join(RESOURCES_DIR, "stock_directory.json"),
+        seed_dir,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    atomic_json_dump(
+        os.path.join(RESOURCES_DIR, "metrics_index.json"),
+        seed_index,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
 
     seed_mb = sum(
         os.path.getsize(os.path.join(SEED_METRICS_DIR, name))
@@ -676,13 +835,24 @@ def package_outputs(assets, directory, index_entries, complete_ids):
         "generatedAt": datetime.now().isoformat(timespec="seconds"),
         "entries": manifest_entries,
     }
-    with open(os.path.join(DIST_DIR, "manifest.json"), "w", encoding="utf-8") as handle:
-        json.dump(manifest, handle, ensure_ascii=False, separators=(",", ":"))
-
-    with open(os.path.join(DIST_DIR, "assets.json"), "w", encoding="utf-8") as handle:
-        json.dump(assets, handle, ensure_ascii=False, indent=2)
-    with open(os.path.join(DIST_DIR, "stock_directory.json"), "w", encoding="utf-8") as handle:
-        json.dump(directory, handle, ensure_ascii=False, separators=(",", ":"))
+    atomic_json_dump(
+        os.path.join(DIST_DIR, "manifest.json"),
+        manifest,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    atomic_json_dump(
+        os.path.join(DIST_DIR, "assets.json"),
+        assets,
+        ensure_ascii=False,
+        indent=2,
+    )
+    atomic_json_dump(
+        os.path.join(DIST_DIR, "stock_directory.json"),
+        directory,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
 
     seed_count = sync_seed_bundle(assets, directory, complete_ids & BUNDLE_SEED_IDS)
     total_mb = sum(item["bytes"] for item in manifest_entries) / 1e6
@@ -692,14 +862,12 @@ def package_outputs(assets, directory, index_entries, complete_ids):
 
 def write_status(payload):
     path = os.path.join(DIST_DIR, "status.json")
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(payload, handle, ensure_ascii=False, indent=2)
+    atomic_json_dump(path, payload, ensure_ascii=False, indent=2)
 
 
 def write_incomplete_report(gaps):
     path = os.path.join(DIST_DIR, "incomplete_report.json")
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(gaps, handle, ensure_ascii=False, indent=2)
+    atomic_json_dump(path, gaps, ensure_ascii=False, indent=2)
     print(f"Wrote incomplete_report.json ({len(gaps)} remaining)")
 
 
@@ -838,6 +1006,7 @@ def run_wave(jobs):
 
 
 def main():
+    global MARKET_TYPES
     print(f"Fetching data from {START_STR} to {END_STR}")
     assets, directory = load_cached_universe()
     if assets:
@@ -850,10 +1019,19 @@ def main():
             raise FetchFailed("no stock universe (TaiwanStockInfo failed and no cache)")
 
     print(f"Total target universe: {len(assets)} assets")
-    with open(os.path.join(DIST_DIR, "assets.json"), "w", encoding="utf-8") as handle:
-        json.dump(assets, handle, ensure_ascii=False, indent=2)
-    with open(os.path.join(DIST_DIR, "stock_directory.json"), "w", encoding="utf-8") as handle:
-        json.dump(directory, handle, ensure_ascii=False, separators=(",", ":"))
+    MARKET_TYPES = load_market_types(directory)
+    atomic_json_dump(
+        os.path.join(DIST_DIR, "assets.json"),
+        assets,
+        ensure_ascii=False,
+        indent=2,
+    )
+    atomic_json_dump(
+        os.path.join(DIST_DIR, "stock_directory.json"),
+        directory,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
     print(f"Wrote dist stock_directory.json ({len(directory)} entries)")
 
     sync_seed_bundle(assets, directory, existing_seed_ids())
