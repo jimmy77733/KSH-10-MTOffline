@@ -11,20 +11,27 @@ on:
         description: "選擇市場 (all / tw / us / package)"
         required: false
         default: "all"
+      soft_minutes:
+        description: "Soft time budget (minutes) before commit & exit"
+        required: false
+        default: "240"
   schedule:
-    # 每日排程自動執行
-    - cron: "15 */6 * * *"
+    # 每 8 小時續跑（單次 soft ~240 分 + 打包，避免與下一輪重疊）
+    - cron: "20 */8 * * *"
+    # 台股盤後（台北約 08:30 / 13:30 → UTC 00:30 / 05:30）
     - cron: "30 0 * * 1-5"
     - cron: "30 5 * * 1-5"
-    # 美股收盤排程 (美東 16:30 = UTC 20:30)
+    # 美股收盤（美東 16:30 = UTC 20:30）
     - cron: "30 20 * * 1-5"
 
+# 同時只允許一輪；新 run 會取消仍在跑／排隊的舊 run，避免雙頭 push 撞車
 concurrency:
   group: mt-offline-fetch
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   fetch:
@@ -32,8 +39,9 @@ jobs:
     timeout-minutes: 360
     env:
       # 排程沒有 workflow_dispatch inputs，依 cron 明確決定要更新的市場。
-      RUN_TW: ${{ github.event_name != 'schedule' && github.event.inputs.market != 'us' || github.event_name == 'schedule' && (github.event.schedule == '30 0 * * 1-5' || github.event.schedule == '30 5 * * 1-5' || github.event.schedule == '15 */6 * * *') }}
-      RUN_US: ${{ github.event_name != 'schedule' && github.event.inputs.market != 'tw' || github.event_name == 'schedule' && (github.event.schedule == '30 20 * * 1-5' || github.event.schedule == '15 */6 * * *') }}
+      RUN_TW: ${{ github.event_name != 'schedule' && github.event.inputs.market != 'us' || github.event_name == 'schedule' && (github.event.schedule == '30 0 * * 1-5' || github.event.schedule == '30 5 * * 1-5' || github.event.schedule == '20 */8 * * *') }}
+      RUN_US: ${{ github.event_name != 'schedule' && github.event.inputs.market != 'tw' || github.event_name == 'schedule' && (github.event.schedule == '30 20 * * 1-5' || github.event.schedule == '20 */8 * * *') }}
+      SOFT_MINUTES: ${{ github.event.inputs.soft_minutes || '240' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -56,7 +64,7 @@ jobs:
           python3 -u tools/fetch_us_offline_data.py || echo "US fetch completed with warnings"
 
       - name: Write FinMind tokens
-        if: ${{ env.RUN_TW == 'true' && (env.FINMIND_TOKENS_JSON != '' || env.FINMIND_TOKENS != '') }}
+        if: ${{ env.RUN_TW == 'true' }}
         env:
           FINMIND_TOKENS_JSON: ${{ secrets.FINMIND_TOKENS_JSON }}
           FINMIND_TOKENS: ${{ secrets.FINMIND_TOKENS }}
@@ -95,14 +103,21 @@ jobs:
           MT_REPO_ROOT: ${{ github.workspace }}
           MT_APP_SEED_DIR: ""
         run: |
+          SOFT="${SOFT_MINUTES:-240}"
+          echo "Soft budget: ${SOFT} minutes (Actions hard cap ~360)"
           set +e
-          timeout 300m python3 -u tools/fetch_historical_data.py
+          timeout "${SOFT}m" python3 -u tools/fetch_historical_data.py
           code=$?
           set -e
           if [ "$code" -eq 124 ]; then
             echo "Soft timeout reached — committing partial progress"
             exit 0
           fi
+          # 非 timeout 的失敗仍繼續打包／推送已寫入磁碟的進度
+          if [ "$code" -ne 0 ]; then
+            echo "TW fetch exited with code $code — still packaging partial progress" >&2
+          fi
+          exit 0
 
       - name: Package Full Bundle Zip
         env:
@@ -111,34 +126,80 @@ jobs:
         run: |
           python3 -u tools/package_offline_bundle.py || echo "Packaging completed with warnings"
 
+      # 輕量索引 artifact：push 失敗時仍可手動下載 status／index（完整 metrics 過大不上傳）
+      - name: Upload progress snapshot artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mt-offline-progress-${{ github.run_id }}
+          path: |
+            status.json
+            manifest.json
+            metrics_index.json
+            incomplete_report.json
+            us_options_wall.json
+            us_metrics_summary.json
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Commit & push progress
         if: always()
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           rm -f tools/finmind_tokens.local.json tools/finmind_tokens.local.txt
+
           for path in status.json manifest.json metrics_index.json assets.json stock_directory.json dataset_negative_cache.json us_index_history.json us_options_wall.json us_stock_directory.json us_metrics_summary.json market_wide.json mt_offline_bundle.zip metrics/ tools/ docs/; do
             if [ -e "$path" ]; then
               git add -A -- "$path"
             fi
           done
           git add incomplete_report.json 2>/dev/null || true
+
           if git diff --staged --quiet; then
             echo "No data changes to commit"
-          else
-            git commit -m "維護：自動更新台美離線資料 ($(date -u +%Y-%m-%dT%H:%MZ)) [skip ci]"
-            for attempt in 1 2 3; do
-              if git pull --rebase origin main && git push; then
-                exit 0
-              fi
-              if git rebase --show-current-patch >/dev/null 2>&1; then
-                git rebase --abort
-              fi
-              if [ "$attempt" -lt 3 ]; then
-                echo "同步失敗，10 秒後重試（第 $attempt 次）" >&2
-                sleep 10
-              fi
-            done
-            echo "同步 main 並推送進度連續 3 次失敗，工作流程明確失敗。" >&2
-            exit 1
+            exit 0
           fi
+
+          git commit -m "維護：自動更新台美離線資料 ($(date -u +%Y-%m-%dT%H:%MZ)) [skip ci]"
+
+          # 衝突時保留「本輪工作區」版本（merge -X ours），避免 rebase 整包失敗丟棄數小時進度
+          push_once() {
+            git fetch origin main
+            if git merge --no-edit -X ours origin/main; then
+              :
+            else
+              echo "merge 仍有衝突，強制採用本輪檔案…" >&2
+              # 資料檔以本 commit / index 為準
+              for path in status.json manifest.json metrics_index.json assets.json stock_directory.json dataset_negative_cache.json us_index_history.json us_options_wall.json us_stock_directory.json us_metrics_summary.json market_wide.json mt_offline_bundle.zip incomplete_report.json metrics tools docs; do
+                if [ -e "$path" ] || git ls-files --error-unmatch "$path" >/dev/null 2>&1; then
+                  git checkout --ours -- "$path" 2>/dev/null || true
+                  git add -A -- "$path" 2>/dev/null || true
+                fi
+              done
+              git commit --no-edit || true
+            fi
+            git push origin HEAD:main
+          }
+
+          for attempt in 1 2 3 4 5; do
+            if push_once; then
+              echo "Push succeeded on attempt $attempt"
+              if [ -f status.json ]; then
+                python3 - <<'PY'
+          import json
+          s=json.load(open("status.json"))
+          print(f"status: {s.get('complete')}/{s.get('universe')} ({s.get('coveragePercent')}%) round={s.get('round')}")
+          PY
+              fi
+              exit 0
+            fi
+            echo "Push attempt $attempt failed; backing up and retrying…" >&2
+            git merge --abort 2>/dev/null || true
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 15))
+          done
+
+          echo "同步 main 並推送進度連續失敗。" >&2
+          exit 1
