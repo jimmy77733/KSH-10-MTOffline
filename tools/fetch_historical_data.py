@@ -501,6 +501,30 @@ def incremental_start_date(dates):
     return (max(valid_days) + timedelta(days=1)).strftime("%Y-%m-%d")
 
 
+def extra_segment_start(local):
+    """補 inst/day/margin：從最近有收盤日往回 RECENT_EXTRA_WINDOW。
+
+    不可用 price latest+1：price 已到 calendarLast 時 start 會落在「尚未結算日之後」，
+    FinMind 回空 → gap 永不縮 → stall 空轉（約 200 檔卡在只缺 day/inst/margin）。
+    """
+    closes = []
+    for day, vals in local.items():
+        if vals.get("close") is None:
+            continue
+        try:
+            closes.append(datetime.strptime(day, "%Y-%m-%d"))
+        except (TypeError, ValueError):
+            continue
+    if not closes:
+        return START_STR
+    last = max(closes)
+    start = last - timedelta(days=RECENT_EXTRA_WINDOW)
+    floor = datetime.strptime(START_STR, "%Y-%m-%d")
+    if start < floor:
+        start = floor
+    return start.strftime("%Y-%m-%d")
+
+
 def last_non_null(rows, key):
     for row in reversed(rows):
         value = row.get(key)
@@ -921,30 +945,32 @@ def process_segments(asset, segments):
     asset_id = asset["id"]
     local = load_asset_metrics(asset_id)
     dataset_price = "TaiwanFuturesDaily" if asset["type"] == "futures" else "TaiwanStockPrice"
-    start = incremental_start_date(local)
+    price_start = incremental_start_date(local)
 
     if "price" in segments or "schema" in segments or not local:
-        prices = fetch_data(dataset_price, asset_id, start, END_STR)
+        prices = fetch_data(dataset_price, asset_id, price_start, END_STR)
         record_dataset_result(asset_id, "price", prices)
         merge_prices(asset, prices, local)
         time.sleep(0.05)
 
     if asset["type"] in ("stock", "etf"):
+        # extras 用獨立 lookback，避免 price 已齊時 start 落在結算日之後空打
+        extra_start = extra_segment_start(local)
         if "inst" in segments:
             rows = fetch_data(
-                "TaiwanStockInstitutionalInvestorsBuySell", asset_id, start, END_STR
+                "TaiwanStockInstitutionalInvestorsBuySell", asset_id, extra_start, END_STR
             )
             record_dataset_result(asset_id, "inst", rows)
             merge_inst(rows, local)
             time.sleep(0.05)
         if "day" in segments:
-            rows = fetch_data("TaiwanStockDayTrading", asset_id, start, END_STR)
+            rows = fetch_data("TaiwanStockDayTrading", asset_id, extra_start, END_STR)
             record_dataset_result(asset_id, "day", rows)
             merge_day_trade(rows, local)
             time.sleep(0.05)
         if "margin" in segments:
             rows = fetch_data(
-                "TaiwanStockMarginPurchaseShortSale", asset_id, start, END_STR
+                "TaiwanStockMarginPurchaseShortSale", asset_id, extra_start, END_STR
             )
             record_dataset_result(asset_id, "margin", rows)
             merge_margin(rows, local)
