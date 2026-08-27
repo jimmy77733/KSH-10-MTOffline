@@ -38,6 +38,14 @@ Pages 只能**唯讀**看已 push 的 `status.json`；抓取必須在本機或 C
 
 ## GitHub Actions（可選）
 
-`.github/workflows/fetch-offline-data.yml` 支援手動觸發。需在 repo **Secrets** 設定 `FINMIND_TOKENS`（逗號分隔）。
+`.github/workflows/fetch-offline-data.yml` 支援手動觸發與排程自動執行:
+
+- **Secrets**: 必須設定 `FINMIND_TOKENS_JSON` (建議，JSON 陣列) 或 `FINMIND_TOKENS` (逗號分隔)
+- **排程時間**:
+  - 每 8 小時續跑（UTC 20分）
+  - 台股盤後：台北 **15:30** (UTC 07:30 週一~五) — 確保 TWSE 結算完成
+  - 美股收盤：美東 16:30 (UTC 20:30 週一~五)
+
+⚠️ 台股 cron 必須在結算後執行 (約 14:30-15:00 完成),過早抓取會拿到空 EOD。
 
 注意：首次約 3000 檔需數十小時，**不建議**在 Actions 跑完整初次抓取（6 小時上限）；適合之後增量更新。

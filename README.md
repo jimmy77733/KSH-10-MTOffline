@@ -45,8 +45,10 @@ docs/                    # GitHub Pages
 Workflow：**Update MT offline data**
 
 - **手動**：Actions → Run workflow
-- **排程**：每 6 小時自動續跑（單次 soft budget ~5 小時，結束前會 commit 進度）
+- **排程**：每 8 小時續跑 + 台股盤後（台北 15:30）+ 美股收盤（美東 16:30）
 - **Secret**：`FINMIND_TOKENS_JSON`（建議，含 name+token）或 `FINMIND_TOKENS`（逗號分隔 JWT）
+  - ⚠️ 必須設定 secrets,否則台股抓取會失敗
+  - 台股盤後 cron 在台北 15:30 執行,確保 TWSE 結算資料已完成
 
 進度寫回 `metrics/` + `status.json`；App 從 jsDelivr / Pages 下載。全市場靠多次排程疊加跑齊。
 
