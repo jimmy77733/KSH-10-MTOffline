@@ -18,9 +18,8 @@ on:
   schedule:
     # 每 8 小時續跑（單次 soft ~240 分 + 打包，避免與下一輪重疊）
     - cron: "20 */8 * * *"
-    # 台股盤後（台北約 08:30 / 13:30 → UTC 00:30 / 05:30）
-    - cron: "30 0 * * 1-5"
-    - cron: "30 5 * * 1-5"
+    # 台股盤後（台北 15:30 = UTC 07:30，確保 TWSE EOD 結算完成）
+    - cron: "30 7 * * 1-5"
     # 美股收盤（美東 16:30 = UTC 20:30）
     - cron: "30 20 * * 1-5"
 
@@ -39,7 +38,7 @@ jobs:
     timeout-minutes: 360
     env:
       # 排程沒有 workflow_dispatch inputs，依 cron 明確決定要更新的市場。
-      RUN_TW: ${{ github.event_name != 'schedule' && github.event.inputs.market != 'us' || github.event_name == 'schedule' && (github.event.schedule == '30 0 * * 1-5' || github.event.schedule == '30 5 * * 1-5' || github.event.schedule == '20 */8 * * *') }}
+      RUN_TW: ${{ github.event_name != 'schedule' && github.event.inputs.market != 'us' || github.event_name == 'schedule' && (github.event.schedule == '30 7 * * 1-5' || github.event.schedule == '20 */8 * * *') }}
       RUN_US: ${{ github.event_name != 'schedule' && github.event.inputs.market != 'tw' || github.event_name == 'schedule' && (github.event.schedule == '30 20 * * 1-5' || github.event.schedule == '20 */8 * * *') }}
       SOFT_MINUTES: ${{ github.event.inputs.soft_minutes || '240' }}
     steps:
@@ -90,8 +89,9 @@ jobs:
               tokens = [t.strip() for t in raw_csv.split(",") if t.strip()]
               out = [{"name": f"token-{i+1}", "token": t} for i, t in enumerate(tokens)]
           if not out:
-              print("No tokens found; skipping TW fetch", file=sys.stderr)
-              sys.exit(0)
+              print("ERROR: No FinMind tokens found. Set FINMIND_TOKENS_JSON or FINMIND_TOKENS in repo secrets.", file=sys.stderr)
+              print("Taiwan stock fetch cannot proceed without valid tokens.", file=sys.stderr)
+              sys.exit(1)
           open(path, "w", encoding="utf-8").write(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
           print(f"Wrote {len(out)} tokens to {path}")
           PY
