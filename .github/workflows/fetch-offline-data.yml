@@ -52,7 +52,7 @@ jobs:
 
       - name: Install Python Dependencies
         run: |
-          pip install yfinance pandas numpy requests urllib3
+          pip install requests urllib3
 
       - name: Fetch US Offline Data & Options Wall
         if: ${{ env.RUN_US == 'true' }}
