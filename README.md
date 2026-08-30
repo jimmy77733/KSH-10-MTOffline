@@ -55,4 +55,4 @@ Workflow：**Update MT offline data**
 進度寫回 `metrics/` + `status.json`；App 從 jsDelivr / Pages 下載。全市場靠多次排程疊加跑齊。
 
 
-資料來源：台股透過 FinMind API（公開資訊管道）與 TWSE/TPEx 官方資訊；美股透過 Finnhub API。
+資料來源：台股透過 FinMind API（公開資訊管道）與 TWSE/TPEx 官方資訊；美股透過 Finnhub（基本面/指標）及其他延遲公開端點。
