@@ -4,8 +4,9 @@ fetch_us_offline_data.py
 美股前 200 大標的歷史資料高效抓取器（支援多組 Finnhub Token 自動輪替、多執行緒並行與限流管理）
 - 抓取美股前 200 大權值股、大盤指數 (SPY, QQQ, DIA, ^VIX) 及板塊 ETF
 - 支援 Finnhub 多 Token 自動輪替 (Round-Robin & Rate Limit 429 故障轉移)
-- 抓取歷史日 K、基本面指標 (PE, PB, 52W, 市值) 與 SPY 期權牆
+- 抓取歷史日 K、基本面指標 (PE, PB, 52W, 市值)
 - 輸出至 dist/offline 目錄
+- 注意: 不再使用 Yahoo Finance API (違反其 ToS)
 """
 
 import json
@@ -16,7 +17,7 @@ import time
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timedelta
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(SCRIPT_DIR)
@@ -26,7 +27,7 @@ METRICS_DIR = os.path.join(DIST_DIR, "metrics")
 os.makedirs(DIST_DIR, exist_ok=True)
 os.makedirs(METRICS_DIR, exist_ok=True)
 
-USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+USER_AGENT = "MT-Offline-Fetcher/1.0"
 
 # 美股前 200 大權值與代表性標的
 US_TOP_UNIVERSE = [
@@ -173,183 +174,59 @@ class FinnhubTokenManager:
         return {}
 
 
-def fetch_yahoo_chart(symbol: str, range_str: str = "3y") -> list:
-    """抓取歷史日 K 線"""
-    clean_sym = symbol.replace(".B", "-B").replace(".A", "-A")
-    if symbol == "VIX" and not symbol.startswith("^"):
-        clean_sym = "^VIX"
-        
-    try:
-        import yfinance as yf
-        ticker = yf.Ticker(clean_sym)
-        df = ticker.history(period=range_str)
-        if not df.empty:
-            bars = []
-            for date_idx, row in df.iterrows():
-                date_str = date_idx.strftime("%Y-%m-%d")
-                c = float(row["Close"])
-                if c <= 0:
-                    continue
-                o = float(row["Open"]) if not row.isna()["Open"] else c
-                h = float(row["High"]) if not row.isna()["High"] else c
-                l = float(row["Low"]) if not row.isna()["Low"] else c
-                v = int(row["Volume"]) if not row.isna()["Volume"] else 0
-                bars.append({
-                    "date": date_str,
-                    "open": round(o, 2),
-                    "high": round(h, 2),
-                    "low": round(l, 2),
-                    "close": round(c, 2),
-                    "volume": v
-                })
-            return bars
-    except Exception:
-        pass
-
-    encoded = urllib.parse.quote(clean_sym, safe="")
-    hosts = ["query1.finance.yahoo.com", "query2.finance.yahoo.com"]
-    for host in hosts:
-        url = f"https://{host}/v8/finance/chart/{encoded}?interval=1d&range={range_str}"
-        req = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": USER_AGENT,
-                "Accept": "application/json"
-            }
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=12) as resp:
-                if resp.status != 200:
-                    continue
-                data = json.loads(resp.read().decode("utf-8"))
-                chart = data.get("chart", {})
-                results = chart.get("result", [])
-                if not results:
-                    continue
-                res = results[0]
-                timestamps = res.get("timestamp", [])
-                indicators = res.get("indicators", {})
-                quote = indicators.get("quote", [{}])[0]
-                
-                opens = quote.get("open", [])
-                highs = quote.get("high", [])
-                lows = quote.get("low", [])
-                closes = quote.get("close", [])
-                volumes = quote.get("volume", [])
-                
-                bars = []
-                for i in range(len(timestamps)):
-                    c = closes[i] if i < len(closes) else None
-                    if c is None or c <= 0:
-                        continue
-                    ts = timestamps[i]
-                    date_str = datetime.fromtimestamp(ts).strftime("%Y-%m-%d")
-                    o = opens[i] if i < len(opens) and opens[i] is not None else c
-                    h = highs[i] if i < len(highs) and highs[i] is not None else c
-                    l = lows[i] if i < len(lows) and lows[i] is not None else c
-                    v = volumes[i] if i < len(volumes) and volumes[i] is not None else 0
-                    
-                    bars.append({
-                        "date": date_str,
-                        "open": round(float(o), 2),
-                        "high": round(float(h), 2),
-                        "low": round(float(l), 2),
-                        "close": round(float(c), 2),
-                        "volume": int(v) if v else 0
-                    })
-                return bars
-        except Exception:
+def fetch_finnhub_candles(symbol: str, finnhub: 'FinnhubTokenManager', years: int = 3) -> list:
+    """使用 Finnhub API 抓取歷史日 K 線（約 3 年）"""
+    clean_sym = symbol.replace(".B", "").replace(".A", "")
+    
+    # Finnhub 需要 unix timestamp (秒)
+    end = int(time.time())
+    start = end - (years * 365 * 24 * 3600)
+    
+    data = finnhub.query("stock/candle", {
+        "symbol": clean_sym,
+        "resolution": "D",
+        "from": start,
+        "to": end
+    })
+    
+    if not data or data.get("s") != "ok":
+        return []
+    
+    timestamps = data.get("t", [])
+    opens = data.get("o", [])
+    highs = data.get("h", [])
+    lows = data.get("l", [])
+    closes = data.get("c", [])
+    volumes = data.get("v", [])
+    
+    bars = []
+    for i in range(len(timestamps)):
+        if i >= len(closes) or closes[i] is None or closes[i] <= 0:
             continue
-            
-    return []
-
-
-def fetch_and_save_options_wall():
-    """抓取並計算 SPY 期權牆"""
-    print("Fetching US options wall (SPY)...")
-    try:
-        import yfinance as yf
-        import numpy as np
+        date_str = datetime.fromtimestamp(timestamps[i]).strftime("%Y-%m-%d")
+        c = closes[i]
+        o = opens[i] if i < len(opens) and opens[i] is not None else c
+        h = highs[i] if i < len(highs) and highs[i] is not None else c
+        l = lows[i] if i < len(lows) and lows[i] is not None else c
+        v = volumes[i] if i < len(volumes) and volumes[i] is not None else 0
         
-        spy = yf.Ticker("SPY")
-        exps = spy.options
-        if exps:
-            exp_date = exps[0]
-            opt = spy.option_chain(exp_date)
-            calls = opt.calls
-            puts = opt.puts
-            spot_price = float(spy.history(period="1d")["Close"].iloc[-1])
-            
-            strikes = sorted(list(set(calls['strike']).union(set(puts['strike']))))
-            min_pain = float('inf')
-            max_pain_strike = None
-            
-            for strike in strikes:
-                call_pain = calls['openInterest'] * np.maximum(0, strike - calls['strike'])
-                put_pain = puts['openInterest'] * np.maximum(0, puts['strike'] - strike)
-                total_pain = call_pain.sum() + put_pain.sum()
-                if total_pain < min_pain:
-                    min_pain = total_pain
-                    max_pain_strike = strike
-                    
-            call_wall = float(calls.loc[calls['openInterest'].idxmax()]['strike']) if not calls.empty else None
-            put_wall = float(puts.loc[puts['openInterest'].idxmax()]['strike']) if not puts.empty else None
-            
-            total_call_oi = calls['openInterest'].sum()
-            total_put_oi = puts['openInterest'].sum()
-            pcr = float(total_put_oi / total_call_oi) if total_call_oi > 0 else 0.0
-            
-            levels = []
-            if call_wall:
-                levels.append({"strike": call_wall, "kind": "CW", "label": "Call Wall", "magnitude": float(calls['openInterest'].max())})
-            if put_wall:
-                levels.append({"strike": put_wall, "kind": "PW", "label": "Put Wall", "magnitude": float(puts['openInterest'].max())})
-            if max_pain_strike:
-                levels.append({"strike": float(max_pain_strike), "kind": "MP", "label": "Max Pain", "magnitude": 0.0})
-                
-            calls_oi = calls[['strike', 'openInterest']].set_index('strike')
-            puts_oi = puts[['strike', 'openInterest']].set_index('strike')
-            merged_oi = calls_oi.join(puts_oi, lsuffix='_call', rsuffix='_put', how='outer').fillna(0)
-            
-            profile = []
-            for strike, row in merged_oi.iterrows():
-                c_oi = row['openInterest_call']
-                p_oi = row['openInterest_put']
-                if c_oi > 0:
-                    profile.append([float(strike), float(c_oi)])
-                if p_oi > 0:
-                    profile.append([float(strike), float(-p_oi)])
-            profile.sort(key=lambda x: x[0])
-            
-            wall_data = {
-                "optionId": "SPY",
-                "underlyingLabel": "S&P 500 ETF",
-                "spot": spot_price,
-                "contractDate": exp_date,
-                "callWall": call_wall,
-                "putWall": put_wall,
-                "maxPain": float(max_pain_strike) if max_pain_strike else None,
-                "pcr": pcr,
-                "levels": levels,
-                "profile": profile,
-                "updatedAt": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-                "isApproximateGEX": True
-            }
-            
-            out_file = os.path.join(DIST_DIR, "us_options_wall.json")
-            with open(out_file, "w", encoding="utf-8") as f:
-                json.dump(wall_data, f, ensure_ascii=False, separators=(',', ':'))
-            print(f"  ✓ Saved {out_file}")
-            return wall_data
-    except Exception as e:
-        print(f"  [Info] yfinance options calculation skipped ({e})")
+        bars.append({
+            "date": date_str,
+            "open": round(float(o), 2),
+            "high": round(float(h), 2),
+            "low": round(float(l), 2),
+            "close": round(float(c), 2),
+            "volume": int(v) if v else 0
+        })
+    
+    return bars
 
 
 def process_single_stock(symbol: str, finnhub: FinnhubTokenManager):
     clean_id = symbol.replace("^", "").replace("-", ".")
     
-    # 1. 抓取日 K 線 (3 年)
-    bars = fetch_yahoo_chart(symbol, range_str="3y")
+    # 1. 使用 Finnhub API 抓取日 K 線 (3 年)
+    bars = fetch_finnhub_candles(symbol, finnhub, years=3)
     if bars:
         metric_file = os.path.join(METRICS_DIR, f"{clean_id}.json")
         with open(metric_file, "w", encoding="utf-8") as f:
@@ -454,8 +331,8 @@ def main():
             json.dump(us_metrics_summary, f, ensure_ascii=False, indent=2)
         print(f"✓ Wrote {metric_sum_file} ({len(us_metrics_summary)} companies)")
         
-    # 抓取 SPY 期權牆
-    fetch_and_save_options_wall()
+    # Options wall: Finnhub free tier 不提供 options 資料，保留既有 us_options_wall.json 不更新
+    print("  [Info] Options wall not refreshed (no official free Finnhub endpoint; existing us_options_wall.json untouched)")
     
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] US Top 200 Offline Data Fetch Complete!")
 
