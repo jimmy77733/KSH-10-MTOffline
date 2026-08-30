@@ -2,6 +2,8 @@
 
 股帳曆 Market Track **台股離線日線庫**（public）。App WiFi 下載與本機抓取共用此 repo。
 
+**本 repo 為個人 StockCalendar App 離線補充包與抓取進度監控，非公開市場數據產品。**
+
 ## 線上進度（GitHub Pages）
 
 **https://jimmy77733.github.io/KSH-10-MTOffline/**
@@ -53,4 +55,4 @@ Workflow：**Update MT offline data**
 進度寫回 `metrics/` + `status.json`；App 從 jsDelivr / Pages 下載。全市場靠多次排程疊加跑齊。
 
 
-資料來源：[FinMind](https://finmindtrade.com/)
+資料來源：台股透過 FinMind API（公開資訊管道）與 TWSE/TPEx 官方資訊；美股透過 Finnhub API。

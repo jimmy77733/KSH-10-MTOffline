@@ -143,7 +143,7 @@
         <span id="repoBadge" class="chip ok">GitHub Pages</span>
       </h1>
       <div class="sub">
-        全市場台美股已驗證歷史 K 線、SPY 期權支撐壓力牆與全量打包檔託管中心
+        個人 StockCalendar App 離線資料抓取進度與狀態監控面板
       </div>
 
       <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
@@ -169,11 +169,11 @@
       <!-- Tab 1: Overview -->
       <div id="tab-overview">
         <div class="card" style="margin-bottom: 20px;">
-          <h2>📦 全量離線補充包 (Offline Bundle Zip)</h2>
+          <h2>📦 個人離線資料包 (Offline Bundle for StockCalendar)</h2>
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 14px;">
             <div>
               <div style="font-size:1.15rem; font-weight:700;">mt_offline_bundle.zip</div>
-              <div class="sub" style="margin-bottom:0;">包含 100% 已驗證之 2,800+ 檔台股與 250 檔美股歷史日 K 線、大盤指數與 SPY 期權牆</div>
+              <div class="sub" style="margin-bottom:0;">個人使用離線補充包，供 StockCalendar App 本機讀取，包含台美股歷史日 K 線與期權牆數據</div>
             </div>
             <a id="bundleDownloadBtn" href="https://raw.githubusercontent.com/jimmy77733/KSH-10-MTOffline/main/mt_offline_bundle.zip" class="btn" target="_blank">
               ⬇️ 下載完整打包檔 (~71 MB)
@@ -201,7 +201,7 @@
                 <span class="source-title">🇹🇼 FinMind API</span>
                 <a class="source-link" href="https://finmindtrade.com/" target="_blank">官方網站 &rarr;</a>
               </div>
-              <div class="source-desc">台股 5 年歷史日 K 線、三大法人買賣超、融資融券餘額與當沖交易量數據。</div>
+              <div class="source-desc">台股歷史日 K 線來源，使用官方 API 與 token 抓取（公開資訊管道）。</div>
             </div>
 
             <div class="source-card">
@@ -209,7 +209,7 @@
                 <span class="source-title">🇹🇼 TWSE / TPEx</span>
                 <a class="source-link" href="https://www.twse.com.tw/" target="_blank">證交所官網 &rarr;</a>
               </div>
-              <div class="source-desc">台灣證券交易所與櫃買中心官方標的目錄、大盤指數與盤後即時市場快照。</div>
+              <div class="source-desc">台灣證券交易所與櫃買中心官方公開資訊，標的目錄與大盤指數。</div>
             </div>
 
             <div class="source-card">
@@ -217,32 +217,11 @@
                 <span class="source-title">🇺🇸 Finnhub Stock API</span>
                 <a class="source-link" href="https://finnhub.io/" target="_blank">官方網站 &rarr;</a>
               </div>
-              <div class="source-desc">美股前 200 大權值歷史日 K 線、公司概況 (Profile)、基本面指標與市場新聞。</div>
+              <div class="source-desc">美股歷史日 K 線來源，使用官方 API 與 token 抓取。</div>
             </div>
-
-            <div class="source-card">
-              <div class="source-top">
-                <span class="source-title">🇺🇸 Yahoo Finance</span>
-                <a class="source-link" href="https://finance.yahoo.com/" target="_blank">官方網站 &rarr;</a>
-              </div>
-              <div class="source-desc">SPY 期權即時鏈 (用於計算期權支撐壓力牆、Max Pain、PCR) 及四大指數歷史走勢。</div>
-            </div>
-
-            <div class="source-card">
-              <div class="source-top">
-                <span class="source-title">🇺🇸 Stooq</span>
-                <a class="source-link" href="https://stooq.com/" target="_blank">官方網站 &rarr;</a>
-              </div>
-              <div class="source-desc">美股個股與 ETF 盤後歷史日 K 線與備援即時行情資料源。</div>
-            </div>
-
-            <div class="source-card">
-              <div class="source-top">
-                <span class="source-title">💱 Open Exchange Rates</span>
-                <a class="source-link" href="https://open.er-api.com/" target="_blank">API 服務 &rarr;</a>
-              </div>
-              <div class="source-desc">美元/台幣 (USD/TWD) 即時與歷史外匯牌價，用於 App 跨市場資產折算。</div>
-            </div>
+          </div>
+          <div class="sub" style="margin-top:16px; padding:12px; background:var(--card-elevated); border-radius:8px; border:1px solid var(--border); font-size:0.82rem; line-height:1.5;">
+            ⚠️ 本頁面為個人抓取進度監控面板，非公開資料產品或鏡像服務。台股透過 FinMind API（公開資訊管道）與 TWSE/TPEx；美股透過 Finnhub；原始 API 條款限制將資料作為公開鏡像重新分發，僅供個人參考使用。
           </div>
         </div>
       </div>
