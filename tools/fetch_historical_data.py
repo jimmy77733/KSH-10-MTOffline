@@ -267,6 +267,7 @@ class TokenPool:
         self.hard_fail_streak = [0] * len(tokens)
         self.quota_streak = [0] * len(tokens)
         self.hourly_hits = [[] for _ in tokens]
+        self.rejected = [False] * len(tokens)
         self.names = [f"Token-{i}" for i in range(len(tokens))]
 
     def _prune_hourly(self, idx, now):
@@ -283,6 +284,8 @@ class TokenPool:
             with self.lock:
                 now = time.time()
                 n = len(self.tokens)
+                if n and all(self.rejected):
+                    raise FetchFailed("all tokens rejected")
                 candidates = []
                 best_wait = None
                 for i in range(n):
@@ -346,7 +349,11 @@ class TokenPool:
             self.hard_fail_streak[idx] += 1
             streak = self.hard_fail_streak[idx]
         if illegal or streak >= 3:
-            self.block(idx, 24 * 3600)
+            with self.lock:
+                self.rejected[idx] = True
+                until = time.time() + 24 * 3600
+                if until > self.cooldown_until[idx]:
+                    self.cooldown_until[idx] = until
             print(f"[!] {self.names[idx]} invalid token, paused 24h")
             return
         if streak >= 2:
@@ -425,6 +432,8 @@ def fetch_data(dataset, data_id, start=None, end=None):
             time.sleep(3)
         except FetchFailed as exc:
             last_error = str(exc)
+            if "rejected" in last_error:
+                raise FetchFailed(f"{dataset}/{data_id}: {last_error}") from exc
             time.sleep(5)
         except Exception as exc:
             last_error = str(exc)
@@ -1194,15 +1203,31 @@ def verify_universe(assets, directory):
 
 
 def ensure_calendar(assets):
+    """交易日曆以 TAIEX 收盤日為準，且每次都往 END_STR 補新日。
+
+    舊邏輯在已有 200 根後直接返回，calendarLast 停在 2026-08-21，
+    之後的交易日被當成「已齊」而不再抓。
+    """
     taiex = load_asset_metrics("TAIEX")
     closes = sorted(day for day, vals in taiex.items() if vals.get("close") is not None)
-    if len(closes) >= 200:
-        return closes, closes[-1]
-    print("Fetching TAIEX calendar first...")
-    _, local = process_segments({"id": "TAIEX", "name": "加權指數", "type": "index"}, ["price"])
-    with metrics_lock:
-        save_asset_metrics("TAIEX", local)
-    closes = sorted(day for day, vals in local.items() if vals.get("close") is not None)
+    stale = (not closes) or closes[-1] < END_STR
+    if len(closes) < 200 or stale:
+        print(
+            "Refreshing TAIEX calendar "
+            f"({closes[-1] if closes else 'none'} -> {END_STR})..."
+        )
+        try:
+            _, local = process_segments(
+                {"id": "TAIEX", "name": "加權指數", "type": "index"}, ["price"]
+            )
+            with metrics_lock:
+                save_asset_metrics("TAIEX", local)
+            taiex = local
+        except FetchFailed as exc:
+            print(f"[!] TAIEX calendar refresh failed: {exc}")
+            if not closes:
+                raise
+    closes = sorted(day for day, vals in taiex.items() if vals.get("close") is not None)
     if not closes:
         raise FetchFailed("cannot build TAIEX calendar")
     return closes, closes[-1]
@@ -1346,11 +1371,11 @@ def main():
     print(f"Wrote dist stock_directory.json ({len(directory)} entries)")
 
     sync_seed_bundle(assets, directory, existing_seed_ids())
-    market_wide_status = build_market_wide()
-    write_market_wide_status(market_wide_status)
-
+    # 日線日曆先於全市場法人／信用。後者失敗不該把價量更新卡在 4 小時空轉。
     calendar_days, calendar_last = ensure_calendar(assets)
     print(f"Calendar {calendar_days[0]} -> {calendar_last} ({len(calendar_days)} sessions)")
+    market_wide_status = build_market_wide()
+    write_market_wide_status(market_wide_status)
 
     universe_ok, universe_issues, expected_ids = verify_universe(assets, directory)
     if not universe_ok:
