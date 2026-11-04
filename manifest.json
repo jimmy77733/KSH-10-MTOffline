@@ -1,8 +1,8 @@
 {
-  "version": "20261104-0419",
-  "generatedAt": "2026-11-04T04:19:03+08:00",
+  "version": "20261104-0847",
+  "generatedAt": "2026-11-04T08:47:51+08:00",
   "totalEntries": 3359,
-  "totalMetricsBytes": 518390457,
+  "totalMetricsBytes": 518368214,
   "bundleZip": "mt_offline_bundle.zip",
   "entries": [
     {
@@ -16815,25 +16815,25 @@
       "id": "AAPL",
       "latestDate": "2026-11-03",
       "path": "metrics/AAPL.json",
-      "bytes": 71901
+      "bytes": 71804
     },
     {
       "id": "ABBV",
       "latestDate": "2026-11-03",
       "path": "metrics/ABBV.json",
-      "bytes": 71192
+      "bytes": 71096
     },
     {
       "id": "ABNB",
       "latestDate": "2026-11-03",
       "path": "metrics/ABNB.json",
-      "bytes": 70948
+      "bytes": 70853
     },
     {
       "id": "ABT",
       "latestDate": "2026-11-03",
       "path": "metrics/ABT.json",
-      "bytes": 70644
+      "bytes": 70552
     },
     {
       "id": "ACGL",
@@ -16857,19 +16857,19 @@
       "id": "ADBE",
       "latestDate": "2026-11-03",
       "path": "metrics/ADBE.json",
-      "bytes": 70909
+      "bytes": 70816
     },
     {
       "id": "ADI",
       "latestDate": "2026-11-03",
       "path": "metrics/ADI.json",
-      "bytes": 71123
+      "bytes": 71030
     },
     {
       "id": "AEP",
       "latestDate": "2026-11-03",
       "path": "metrics/AEP.json",
-      "bytes": 69625
+      "bytes": 69535
     },
     {
       "id": "AER",
@@ -16887,7 +16887,7 @@
       "id": "AFL",
       "latestDate": "2026-11-03",
       "path": "metrics/AFL.json",
-      "bytes": 70123
+      "bytes": 70033
     },
     {
       "id": "AGG",
@@ -16899,7 +16899,7 @@
       "id": "AIG",
       "latestDate": "2026-11-03",
       "path": "metrics/AIG.json",
-      "bytes": 68139
+      "bytes": 68049
     },
     {
       "id": "AIR",
@@ -16923,7 +16923,7 @@
       "id": "ALB",
       "latestDate": "2026-11-03",
       "path": "metrics/ALB.json",
-      "bytes": 69730
+      "bytes": 69636
     },
     {
       "id": "ALK",
@@ -16935,7 +16935,7 @@
       "id": "ALL",
       "latestDate": "2026-11-03",
       "path": "metrics/ALL.json",
-      "bytes": 71077
+      "bytes": 70981
     },
     {
       "id": "ALLY",
@@ -16953,7 +16953,7 @@
       "id": "AMAT",
       "latestDate": "2026-11-03",
       "path": "metrics/AMAT.json",
-      "bytes": 71241
+      "bytes": 71148
     },
     {
       "id": "AMCR",
@@ -16965,7 +16965,7 @@
       "id": "AMD",
       "latestDate": "2026-11-03",
       "path": "metrics/AMD.json",
-      "bytes": 71603
+      "bytes": 71506
     },
     {
       "id": "AME",
@@ -16977,31 +16977,31 @@
       "id": "AMGN",
       "latestDate": "2026-11-03",
       "path": "metrics/AMGN.json",
-      "bytes": 71144
+      "bytes": 71052
     },
     {
       "id": "AMT",
       "latestDate": "2026-11-03",
       "path": "metrics/AMT.json",
-      "bytes": 71125
+      "bytes": 71034
     },
     {
       "id": "AMZN",
       "latestDate": "2026-11-03",
       "path": "metrics/AMZN.json",
-      "bytes": 71770
+      "bytes": 71676
     },
     {
       "id": "ANET",
       "latestDate": "2026-11-03",
       "path": "metrics/ANET.json",
-      "bytes": 69777
+      "bytes": 69689
     },
     {
       "id": "AON",
       "latestDate": "2026-11-03",
       "path": "metrics/AON.json",
-      "bytes": 70911
+      "bytes": 70816
     },
     {
       "id": "APA",
@@ -17013,7 +17013,7 @@
       "id": "APD",
       "latestDate": "2026-11-03",
       "path": "metrics/APD.json",
-      "bytes": 70903
+      "bytes": 70787
     },
     {
       "id": "AR",
@@ -17025,13 +17025,13 @@
       "id": "ARKK",
       "latestDate": "2026-11-03",
       "path": "metrics/ARKK.json",
-      "bytes": 68398
+      "bytes": 68307
     },
     {
       "id": "ARM",
       "latestDate": "2026-11-03",
       "path": "metrics/ARM.json",
-      "bytes": 70548
+      "bytes": 70457
     },
     {
       "id": "ARWR",
@@ -17049,7 +17049,7 @@
       "id": "ASML",
       "latestDate": "2026-11-03",
       "path": "metrics/ASML.json",
-      "bytes": 72131
+      "bytes": 72038
     },
     {
       "id": "AVA",
@@ -17067,7 +17067,7 @@
       "id": "AVGO",
       "latestDate": "2026-11-03",
       "path": "metrics/AVGO.json",
-      "bytes": 71780
+      "bytes": 71690
     },
     {
       "id": "AVNT",
@@ -17079,31 +17079,31 @@
       "id": "AXP",
       "latestDate": "2026-11-03",
       "path": "metrics/AXP.json",
-      "bytes": 71129
+      "bytes": 71034
     },
     {
       "id": "AZO",
       "latestDate": "2026-11-03",
       "path": "metrics/AZO.json",
-      "bytes": 72965
+      "bytes": 72867
     },
     {
       "id": "BA",
       "latestDate": "2026-11-03",
       "path": "metrics/BA.json",
-      "bytes": 70956
+      "bytes": 70862
     },
     {
       "id": "BABA",
       "latestDate": "2026-11-03",
       "path": "metrics/BABA.json",
-      "bytes": 70442
+      "bytes": 70349
     },
     {
       "id": "BAC",
       "latestDate": "2026-11-03",
       "path": "metrics/BAC.json",
-      "bytes": 68857
+      "bytes": 68765
     },
     {
       "id": "BBBY",
@@ -17121,7 +17121,7 @@
       "id": "BDX",
       "latestDate": "2026-11-03",
       "path": "metrics/BDX.json",
-      "bytes": 71100
+      "bytes": 71005
     },
     {
       "id": "BEN",
@@ -17133,7 +17133,7 @@
       "id": "BIDU",
       "latestDate": "2026-11-03",
       "path": "metrics/BIDU.json",
-      "bytes": 69504
+      "bytes": 69409
     },
     {
       "id": "BIIB",
@@ -17157,19 +17157,19 @@
       "id": "BKNG",
       "latestDate": "2026-11-03",
       "path": "metrics/BKNG.json",
-      "bytes": 71214
+      "bytes": 71121
     },
     {
       "id": "BKR",
       "latestDate": "2026-11-03",
       "path": "metrics/BKR.json",
-      "bytes": 68216
+      "bytes": 68127
     },
     {
       "id": "BLK",
       "latestDate": "2026-11-03",
       "path": "metrics/BLK.json",
-      "bytes": 71732
+      "bytes": 71637
     },
     {
       "id": "BMRN",
@@ -17181,7 +17181,7 @@
       "id": "BMY",
       "latestDate": "2026-11-03",
       "path": "metrics/BMY.json",
-      "bytes": 68672
+      "bytes": 68581
     },
     {
       "id": "BND",
@@ -17211,7 +17211,7 @@
       "id": "BRK.B",
       "latestDate": "2026-11-03",
       "path": "metrics/BRK.B.json",
-      "bytes": 70849
+      "bytes": 70755
     },
     {
       "id": "BRO",
@@ -17229,7 +17229,7 @@
       "id": "BSX",
       "latestDate": "2026-11-03",
       "path": "metrics/BSX.json",
-      "bytes": 68902
+      "bytes": 68813
     },
     {
       "id": "BXP",
@@ -17241,7 +17241,7 @@
       "id": "C",
       "latestDate": "2026-11-03",
       "path": "metrics/C.json",
-      "bytes": 69675
+      "bytes": 69584
     },
     {
       "id": "CABO",
@@ -17265,19 +17265,19 @@
       "id": "CARR",
       "latestDate": "2026-11-03",
       "path": "metrics/CARR.json",
-      "bytes": 68175
+      "bytes": 68084
     },
     {
       "id": "CAT",
       "latestDate": "2026-11-03",
       "path": "metrics/CAT.json",
-      "bytes": 71177
+      "bytes": 71083
     },
     {
       "id": "CB",
       "latestDate": "2026-11-03",
       "path": "metrics/CB.json",
-      "bytes": 71069
+      "bytes": 70973
     },
     {
       "id": "CBOE",
@@ -17295,13 +17295,13 @@
       "id": "CCI",
       "latestDate": "2026-11-03",
       "path": "metrics/CCI.json",
-      "bytes": 68331
+      "bytes": 68241
     },
     {
       "id": "CDNS",
       "latestDate": "2026-11-03",
       "path": "metrics/CDNS.json",
-      "bytes": 70882
+      "bytes": 70788
     },
     {
       "id": "CDW",
@@ -17319,7 +17319,7 @@
       "id": "CEG",
       "latestDate": "2026-11-03",
       "path": "metrics/CEG.json",
-      "bytes": 71119
+      "bytes": 71025
     },
     {
       "id": "CENX",
@@ -17349,13 +17349,13 @@
       "id": "CHTR",
       "latestDate": "2026-11-03",
       "path": "metrics/CHTR.json",
-      "bytes": 70820
+      "bytes": 70730
     },
     {
       "id": "CI",
       "latestDate": "2026-11-03",
       "path": "metrics/CI.json",
-      "bytes": 71058
+      "bytes": 70966
     },
     {
       "id": "CIEN",
@@ -17367,7 +17367,7 @@
       "id": "CL",
       "latestDate": "2026-11-03",
       "path": "metrics/CL.json",
-      "bytes": 68192
+      "bytes": 68104
     },
     {
       "id": "CLH",
@@ -17385,25 +17385,25 @@
       "id": "CMCSA",
       "latestDate": "2026-11-03",
       "path": "metrics/CMCSA.json",
-      "bytes": 68870
+      "bytes": 68779
     },
     {
       "id": "CME",
       "latestDate": "2026-11-03",
       "path": "metrics/CME.json",
-      "bytes": 71127
+      "bytes": 71033
     },
     {
       "id": "CMG",
       "latestDate": "2026-11-03",
       "path": "metrics/CMG.json",
-      "bytes": 68598
+      "bytes": 68508
     },
     {
       "id": "CMI",
       "latestDate": "2026-11-03",
       "path": "metrics/CMI.json",
-      "bytes": 70602
+      "bytes": 70508
     },
     {
       "id": "CMS",
@@ -17427,7 +17427,7 @@
       "id": "CNI",
       "latestDate": "2026-11-03",
       "path": "metrics/CNI.json",
-      "bytes": 69947
+      "bytes": 69852
     },
     {
       "id": "CNP",
@@ -17445,13 +17445,13 @@
       "id": "COF",
       "latestDate": "2026-11-03",
       "path": "metrics/COF.json",
-      "bytes": 71106
+      "bytes": 71012
     },
     {
       "id": "COIN",
       "latestDate": "2026-11-03",
       "path": "metrics/COIN.json",
-      "bytes": 71075
+      "bytes": 70986
     },
     {
       "id": "COLD",
@@ -17469,25 +17469,25 @@
       "id": "COP",
       "latestDate": "2026-11-03",
       "path": "metrics/COP.json",
-      "bytes": 69925
+      "bytes": 69828
     },
     {
       "id": "COR",
       "latestDate": "2026-11-03",
       "path": "metrics/COR.json",
-      "bytes": 70914
+      "bytes": 70820
     },
     {
       "id": "COST",
       "latestDate": "2026-11-03",
       "path": "metrics/COST.json",
-      "bytes": 71460
+      "bytes": 71367
     },
     {
       "id": "CP",
       "latestDate": "2026-11-03",
       "path": "metrics/CP.json",
-      "bytes": 68128
+      "bytes": 68039
     },
     {
       "id": "CPB",
@@ -17511,7 +17511,7 @@
       "id": "CRM",
       "latestDate": "2026-11-03",
       "path": "metrics/CRM.json",
-      "bytes": 71350
+      "bytes": 71253
     },
     {
       "id": "CRWD",
@@ -17523,7 +17523,7 @@
       "id": "CSCO",
       "latestDate": "2026-11-03",
       "path": "metrics/CSCO.json",
-      "bytes": 69347
+      "bytes": 69256
     },
     {
       "id": "CSGP",
@@ -17535,7 +17535,7 @@
       "id": "CSX",
       "latestDate": "2026-11-03",
       "path": "metrics/CSX.json",
-      "bytes": 68662
+      "bytes": 68572
     },
     {
       "id": "CTSH",
@@ -17547,25 +17547,25 @@
       "id": "CTVA",
       "latestDate": "2026-11-03",
       "path": "metrics/CTVA.json",
-      "bytes": 67133
+      "bytes": 67047
     },
     {
       "id": "CVS",
       "latestDate": "2026-11-03",
       "path": "metrics/CVS.json",
-      "bytes": 68511
+      "bytes": 68421
     },
     {
       "id": "CVX",
       "latestDate": "2026-11-03",
       "path": "metrics/CVX.json",
-      "bytes": 71312
+      "bytes": 71216
     },
     {
       "id": "D",
       "latestDate": "2026-11-03",
       "path": "metrics/D.json",
-      "bytes": 68169
+      "bytes": 68078
     },
     {
       "id": "DAL",
@@ -17577,7 +17577,7 @@
       "id": "DD",
       "latestDate": "2026-11-03",
       "path": "metrics/DD.json",
-      "bytes": 69309
+      "bytes": 69219
     },
     {
       "id": "DDOG",
@@ -17589,7 +17589,7 @@
       "id": "DE",
       "latestDate": "2026-11-03",
       "path": "metrics/DE.json",
-      "bytes": 70960
+      "bytes": 70865
     },
     {
       "id": "DECK",
@@ -17607,7 +17607,7 @@
       "id": "DG",
       "latestDate": "2026-11-03",
       "path": "metrics/DG.json",
-      "bytes": 70261
+      "bytes": 70167
     },
     {
       "id": "DHR",
@@ -17619,13 +17619,13 @@
       "id": "DIA",
       "latestDate": "2026-11-03",
       "path": "metrics/DIA.json",
-      "bytes": 71141
+      "bytes": 71046
     },
     {
       "id": "DIS",
       "latestDate": "2026-11-03",
       "path": "metrics/DIS.json",
-      "bytes": 70283
+      "bytes": 70193
     },
     {
       "id": "DJI",
@@ -17643,13 +17643,13 @@
       "id": "DLR",
       "latestDate": "2026-11-03",
       "path": "metrics/DLR.json",
-      "bytes": 71081
+      "bytes": 70988
     },
     {
       "id": "DLTR",
       "latestDate": "2026-11-03",
       "path": "metrics/DLTR.json",
-      "bytes": 69896
+      "bytes": 69803
     },
     {
       "id": "DNUT",
@@ -17661,13 +17661,13 @@
       "id": "DOW",
       "latestDate": "2026-11-03",
       "path": "metrics/DOW.json",
-      "bytes": 68389
+      "bytes": 68298
     },
     {
       "id": "DUK",
       "latestDate": "2026-11-03",
       "path": "metrics/DUK.json",
-      "bytes": 70374
+      "bytes": 70285
     },
     {
       "id": "DVA",
@@ -17679,13 +17679,13 @@
       "id": "DVN",
       "latestDate": "2026-11-03",
       "path": "metrics/DVN.json",
-      "bytes": 68366
+      "bytes": 68275
     },
     {
       "id": "DXCM",
       "latestDate": "2026-11-03",
       "path": "metrics/DXCM.json",
-      "bytes": 68727
+      "bytes": 68637
     },
     {
       "id": "EA",
@@ -17703,7 +17703,7 @@
       "id": "ECL",
       "latestDate": "2026-11-03",
       "path": "metrics/ECL.json",
-      "bytes": 70885
+      "bytes": 70791
     },
     {
       "id": "ED",
@@ -17715,13 +17715,13 @@
       "id": "EEM",
       "latestDate": "2026-11-03",
       "path": "metrics/EEM.json",
-      "bytes": 68865
+      "bytes": 68774
     },
     {
       "id": "EFA",
       "latestDate": "2026-11-03",
       "path": "metrics/EFA.json",
-      "bytes": 69360
+      "bytes": 69270
     },
     {
       "id": "EIX",
@@ -17739,7 +17739,7 @@
       "id": "ELV",
       "latestDate": "2026-11-03",
       "path": "metrics/ELV.json",
-      "bytes": 70929
+      "bytes": 70839
     },
     {
       "id": "EMB",
@@ -17757,7 +17757,7 @@
       "id": "EMR",
       "latestDate": "2026-11-03",
       "path": "metrics/EMR.json",
-      "bytes": 70738
+      "bytes": 70647
     },
     {
       "id": "ENSG",
@@ -17769,7 +17769,7 @@
       "id": "EOG",
       "latestDate": "2026-11-03",
       "path": "metrics/EOG.json",
-      "bytes": 71143
+      "bytes": 71049
     },
     {
       "id": "EPAM",
@@ -17781,7 +17781,7 @@
       "id": "EQIX",
       "latestDate": "2026-11-03",
       "path": "metrics/EQIX.json",
-      "bytes": 70943
+      "bytes": 70848
     },
     {
       "id": "EQR",
@@ -17793,7 +17793,7 @@
       "id": "EQT",
       "latestDate": "2026-11-03",
       "path": "metrics/EQT.json",
-      "bytes": 68283
+      "bytes": 68192
     },
     {
       "id": "ERIE",
@@ -17811,7 +17811,7 @@
       "id": "ETN",
       "latestDate": "2026-11-03",
       "path": "metrics/ETN.json",
-      "bytes": 71109
+      "bytes": 71014
     },
     {
       "id": "ETR",
@@ -17835,7 +17835,7 @@
       "id": "EW",
       "latestDate": "2026-11-03",
       "path": "metrics/EW.json",
-      "bytes": 68042
+      "bytes": 67952
     },
     {
       "id": "EWBC",
@@ -17847,7 +17847,7 @@
       "id": "EXC",
       "latestDate": "2026-11-03",
       "path": "metrics/EXC.json",
-      "bytes": 68234
+      "bytes": 68144
     },
     {
       "id": "EXEL",
@@ -17871,19 +17871,19 @@
       "id": "FANG",
       "latestDate": "2026-11-03",
       "path": "metrics/FANG.json",
-      "bytes": 71102
+      "bytes": 71010
     },
     {
       "id": "FCX",
       "latestDate": "2026-11-03",
       "path": "metrics/FCX.json",
-      "bytes": 68726
+      "bytes": 68636
     },
     {
       "id": "FDX",
       "latestDate": "2026-11-03",
       "path": "metrics/FDX.json",
-      "bytes": 71083
+      "bytes": 70987
     },
     {
       "id": "FE",
@@ -17943,7 +17943,7 @@
       "id": "FTNT",
       "latestDate": "2026-11-03",
       "path": "metrics/FTNT.json",
-      "bytes": 68921
+      "bytes": 68829
     },
     {
       "id": "GATX",
@@ -17961,13 +17961,13 @@
       "id": "GD",
       "latestDate": "2026-11-03",
       "path": "metrics/GD.json",
-      "bytes": 70822
+      "bytes": 70727
     },
     {
       "id": "GE",
       "latestDate": "2026-11-03",
       "path": "metrics/GE.json",
-      "bytes": 70994
+      "bytes": 70905
     },
     {
       "id": "GGG",
@@ -17979,7 +17979,7 @@
       "id": "GILD",
       "latestDate": "2026-11-03",
       "path": "metrics/GILD.json",
-      "bytes": 69870
+      "bytes": 69779
     },
     {
       "id": "GIS",
@@ -17997,7 +17997,7 @@
       "id": "GLD",
       "latestDate": "2026-11-03",
       "path": "metrics/GLD.json",
-      "bytes": 71391
+      "bytes": 71296
     },
     {
       "id": "GLOB",
@@ -18021,7 +18021,7 @@
       "id": "GOOGL",
       "latestDate": "2026-11-03",
       "path": "metrics/GOOGL.json",
-      "bytes": 71889
+      "bytes": 71792
     },
     {
       "id": "GOVT",
@@ -18045,7 +18045,7 @@
       "id": "GS",
       "latestDate": "2026-11-03",
       "path": "metrics/GS.json",
-      "bytes": 71392
+      "bytes": 71298
     },
     {
       "id": "GSPC",
@@ -18063,7 +18063,7 @@
       "id": "HAL",
       "latestDate": "2026-11-03",
       "path": "metrics/HAL.json",
-      "bytes": 68503
+      "bytes": 68412
     },
     {
       "id": "HALO",
@@ -18081,13 +18081,13 @@
       "id": "HCA",
       "latestDate": "2026-11-03",
       "path": "metrics/HCA.json",
-      "bytes": 70889
+      "bytes": 70794
     },
     {
       "id": "HD",
       "latestDate": "2026-11-03",
       "path": "metrics/HD.json",
-      "bytes": 71131
+      "bytes": 71039
     },
     {
       "id": "HE",
@@ -18111,13 +18111,13 @@
       "id": "HLT",
       "latestDate": "2026-11-03",
       "path": "metrics/HLT.json",
-      "bytes": 71108
+      "bytes": 71014
     },
     {
       "id": "HON",
       "latestDate": "2026-11-03",
       "path": "metrics/HON.json",
-      "bytes": 71140
+      "bytes": 71045
     },
     {
       "id": "HP",
@@ -18177,7 +18177,7 @@
       "id": "HUM",
       "latestDate": "2026-11-03",
       "path": "metrics/HUM.json",
-      "bytes": 71002
+      "bytes": 70910
     },
     {
       "id": "HUN",
@@ -18189,7 +18189,7 @@
       "id": "HYG",
       "latestDate": "2026-11-03",
       "path": "metrics/HYG.json",
-      "bytes": 68886
+      "bytes": 68842
     },
     {
       "id": "IAU",
@@ -18207,13 +18207,13 @@
       "id": "IBM",
       "latestDate": "2026-11-03",
       "path": "metrics/IBM.json",
-      "bytes": 71148
+      "bytes": 71054
     },
     {
       "id": "ICE",
       "latestDate": "2026-11-03",
       "path": "metrics/ICE.json",
-      "bytes": 71132
+      "bytes": 71038
     },
     {
       "id": "ICF",
@@ -18231,7 +18231,7 @@
       "id": "IDXX",
       "latestDate": "2026-11-03",
       "path": "metrics/IDXX.json",
-      "bytes": 70346
+      "bytes": 70254
     },
     {
       "id": "IEMG",
@@ -18273,7 +18273,7 @@
       "id": "INTU",
       "latestDate": "2026-11-03",
       "path": "metrics/INTU.json",
-      "bytes": 71048
+      "bytes": 70958
     },
     {
       "id": "IONS",
@@ -18291,7 +18291,7 @@
       "id": "IQV",
       "latestDate": "2026-11-03",
       "path": "metrics/IQV.json",
-      "bytes": 70885
+      "bytes": 70793
     },
     {
       "id": "IR",
@@ -18309,7 +18309,7 @@
       "id": "ISRG",
       "latestDate": "2026-11-03",
       "path": "metrics/ISRG.json",
-      "bytes": 70838
+      "bytes": 70744
     },
     {
       "id": "ITGR",
@@ -18321,7 +18321,7 @@
       "id": "ITW",
       "latestDate": "2026-11-03",
       "path": "metrics/ITW.json",
-      "bytes": 70786
+      "bytes": 70691
     },
     {
       "id": "IVZ",
@@ -18333,7 +18333,7 @@
       "id": "IWM",
       "latestDate": "2026-11-03",
       "path": "metrics/IWM.json",
-      "bytes": 71907
+      "bytes": 71813
     },
     {
       "id": "JACK",
@@ -18363,7 +18363,7 @@
       "id": "JCI",
       "latestDate": "2026-11-03",
       "path": "metrics/JCI.json",
-      "bytes": 69594
+      "bytes": 69505
     },
     {
       "id": "JLL",
@@ -18375,13 +18375,13 @@
       "id": "JNJ",
       "latestDate": "2026-11-03",
       "path": "metrics/JNJ.json",
-      "bytes": 71234
+      "bytes": 71140
     },
     {
       "id": "JPM",
       "latestDate": "2026-11-03",
       "path": "metrics/JPM.json",
-      "bytes": 71324
+      "bytes": 71229
     },
     {
       "id": "KALU",
@@ -18411,7 +18411,7 @@
       "id": "KLAC",
       "latestDate": "2026-11-03",
       "path": "metrics/KLAC.json",
-      "bytes": 69586
+      "bytes": 69496
     },
     {
       "id": "KMB",
@@ -18423,7 +18423,7 @@
       "id": "KMI",
       "latestDate": "2026-11-03",
       "path": "metrics/KMI.json",
-      "bytes": 68716
+      "bytes": 68625
     },
     {
       "id": "KNX",
@@ -18435,7 +18435,7 @@
       "id": "KO",
       "latestDate": "2026-11-03",
       "path": "metrics/KO.json",
-      "bytes": 68835
+      "bytes": 68743
     },
     {
       "id": "KSS",
@@ -18459,19 +18459,19 @@
       "id": "LIN",
       "latestDate": "2026-11-03",
       "path": "metrics/LIN.json",
-      "bytes": 71096
+      "bytes": 71004
     },
     {
       "id": "LLY",
       "latestDate": "2026-11-03",
       "path": "metrics/LLY.json",
-      "bytes": 71868
+      "bytes": 71775
     },
     {
       "id": "LMT",
       "latestDate": "2026-11-03",
       "path": "metrics/LMT.json",
-      "bytes": 70863
+      "bytes": 70768
     },
     {
       "id": "LNC",
@@ -18489,7 +18489,7 @@
       "id": "LOW",
       "latestDate": "2026-11-03",
       "path": "metrics/LOW.json",
-      "bytes": 71138
+      "bytes": 71044
     },
     {
       "id": "LPLA",
@@ -18501,19 +18501,19 @@
       "id": "LQD",
       "latestDate": "2026-11-03",
       "path": "metrics/LQD.json",
-      "bytes": 70778
+      "bytes": 70815
     },
     {
       "id": "LRCX",
       "latestDate": "2026-11-03",
       "path": "metrics/LRCX.json",
-      "bytes": 69812
+      "bytes": 69722
     },
     {
       "id": "LULU",
       "latestDate": "2026-11-03",
       "path": "metrics/LULU.json",
-      "bytes": 70762
+      "bytes": 70668
     },
     {
       "id": "LUV",
@@ -18543,7 +18543,7 @@
       "id": "MA",
       "latestDate": "2026-11-03",
       "path": "metrics/MA.json",
-      "bytes": 71143
+      "bytes": 71051
     },
     {
       "id": "MAA",
@@ -18555,25 +18555,25 @@
       "id": "MAR",
       "latestDate": "2026-11-03",
       "path": "metrics/MAR.json",
-      "bytes": 71042
+      "bytes": 70946
     },
     {
       "id": "MCD",
       "latestDate": "2026-11-03",
       "path": "metrics/MCD.json",
-      "bytes": 71148
+      "bytes": 71053
     },
     {
       "id": "MCK",
       "latestDate": "2026-11-03",
       "path": "metrics/MCK.json",
-      "bytes": 70583
+      "bytes": 70488
     },
     {
       "id": "MCO",
       "latestDate": "2026-11-03",
       "path": "metrics/MCO.json",
-      "bytes": 70583
+      "bytes": 70488
     },
     {
       "id": "MCRI",
@@ -18591,13 +18591,13 @@
       "id": "MDLZ",
       "latestDate": "2026-11-03",
       "path": "metrics/MDLZ.json",
-      "bytes": 68251
+      "bytes": 68159
     },
     {
       "id": "MDT",
       "latestDate": "2026-11-03",
       "path": "metrics/MDT.json",
-      "bytes": 68270
+      "bytes": 68179
     },
     {
       "id": "MDU",
@@ -18609,13 +18609,13 @@
       "id": "MET",
       "latestDate": "2026-11-03",
       "path": "metrics/MET.json",
-      "bytes": 68179
+      "bytes": 68089
     },
     {
       "id": "META",
       "latestDate": "2026-11-03",
       "path": "metrics/META.json",
-      "bytes": 71742
+      "bytes": 71649
     },
     {
       "id": "MGAM",
@@ -18657,7 +18657,7 @@
       "id": "MO",
       "latestDate": "2026-11-03",
       "path": "metrics/MO.json",
-      "bytes": 68314
+      "bytes": 68225
     },
     {
       "id": "MOH",
@@ -18675,13 +18675,13 @@
       "id": "MPC",
       "latestDate": "2026-11-03",
       "path": "metrics/MPC.json",
-      "bytes": 71109
+      "bytes": 71013
     },
     {
       "id": "MRK",
       "latestDate": "2026-11-03",
       "path": "metrics/MRK.json",
-      "bytes": 70216
+      "bytes": 70126
     },
     {
       "id": "MRNA",
@@ -18693,19 +18693,19 @@
       "id": "MRVL",
       "latestDate": "2026-11-03",
       "path": "metrics/MRVL.json",
-      "bytes": 69567
+      "bytes": 69475
     },
     {
       "id": "MS",
       "latestDate": "2026-11-03",
       "path": "metrics/MS.json",
-      "bytes": 70294
+      "bytes": 70202
     },
     {
       "id": "MSFT",
       "latestDate": "2026-11-03",
       "path": "metrics/MSFT.json",
-      "bytes": 71867
+      "bytes": 71772
     },
     {
       "id": "MTB",
@@ -18717,7 +18717,7 @@
       "id": "MU",
       "latestDate": "2026-11-03",
       "path": "metrics/MU.json",
-      "bytes": 71093
+      "bytes": 71001
     },
     {
       "id": "MYRG",
@@ -18753,13 +18753,13 @@
       "id": "NEE",
       "latestDate": "2026-11-03",
       "path": "metrics/NEE.json",
-      "bytes": 68501
+      "bytes": 68411
     },
     {
       "id": "NEM",
       "latestDate": "2026-11-03",
       "path": "metrics/NEM.json",
-      "bytes": 69140
+      "bytes": 69048
     },
     {
       "id": "NET",
@@ -18777,7 +18777,7 @@
       "id": "NFLX",
       "latestDate": "2026-11-03",
       "path": "metrics/NFLX.json",
-      "bytes": 69415
+      "bytes": 69324
     },
     {
       "id": "NHI",
@@ -18795,19 +18795,19 @@
       "id": "NKE",
       "latestDate": "2026-11-03",
       "path": "metrics/NKE.json",
-      "bytes": 68764
+      "bytes": 68673
     },
     {
       "id": "NOC",
       "latestDate": "2026-11-03",
       "path": "metrics/NOC.json",
-      "bytes": 70555
+      "bytes": 70461
     },
     {
       "id": "NOW",
       "latestDate": "2026-11-03",
       "path": "metrics/NOW.json",
-      "bytes": 70908
+      "bytes": 70815
     },
     {
       "id": "NRG",
@@ -18819,7 +18819,7 @@
       "id": "NSC",
       "latestDate": "2026-11-03",
       "path": "metrics/NSC.json",
-      "bytes": 70883
+      "bytes": 70790
     },
     {
       "id": "NSIT",
@@ -18849,7 +18849,7 @@
       "id": "NUE",
       "latestDate": "2026-11-03",
       "path": "metrics/NUE.json",
-      "bytes": 71003
+      "bytes": 70909
     },
     {
       "id": "NVCR",
@@ -18861,7 +18861,7 @@
       "id": "NVDA",
       "latestDate": "2026-11-03",
       "path": "metrics/NVDA.json",
-      "bytes": 72038
+      "bytes": 71943
     },
     {
       "id": "NWSA",
@@ -18873,7 +18873,7 @@
       "id": "NXPI",
       "latestDate": "2026-11-03",
       "path": "metrics/NXPI.json",
-      "bytes": 71129
+      "bytes": 71036
     },
     {
       "id": "NXRT",
@@ -18885,7 +18885,7 @@
       "id": "O",
       "latestDate": "2026-11-03",
       "path": "metrics/O.json",
-      "bytes": 68186
+      "bytes": 68094
     },
     {
       "id": "ODFL",
@@ -18909,7 +18909,7 @@
       "id": "OKE",
       "latestDate": "2026-11-03",
       "path": "metrics/OKE.json",
-      "bytes": 68176
+      "bytes": 68086
     },
     {
       "id": "OKTA",
@@ -18927,7 +18927,7 @@
       "id": "OMC",
       "latestDate": "2026-11-03",
       "path": "metrics/OMC.json",
-      "bytes": 68076
+      "bytes": 67986
     },
     {
       "id": "OPEN",
@@ -18939,19 +18939,19 @@
       "id": "ORCL",
       "latestDate": "2026-11-03",
       "path": "metrics/ORCL.json",
-      "bytes": 71553
+      "bytes": 71460
     },
     {
       "id": "ORLY",
       "latestDate": "2026-11-03",
       "path": "metrics/ORLY.json",
-      "bytes": 68405
+      "bytes": 68315
     },
     {
       "id": "OTIS",
       "latestDate": "2026-11-03",
       "path": "metrics/OTIS.json",
-      "bytes": 68189
+      "bytes": 68099
     },
     {
       "id": "OTTR",
@@ -18963,13 +18963,13 @@
       "id": "OXY",
       "latestDate": "2026-11-03",
       "path": "metrics/OXY.json",
-      "bytes": 68457
+      "bytes": 68367
     },
     {
       "id": "PANW",
       "latestDate": "2026-11-03",
       "path": "metrics/PANW.json",
-      "bytes": 71001
+      "bytes": 70904
     },
     {
       "id": "PARA",
@@ -18981,7 +18981,7 @@
       "id": "PCAR",
       "latestDate": "2026-11-03",
       "path": "metrics/PCAR.json",
-      "bytes": 69732
+      "bytes": 69644
     },
     {
       "id": "PCG",
@@ -19005,7 +19005,7 @@
       "id": "PDD",
       "latestDate": "2026-11-03",
       "path": "metrics/PDD.json",
-      "bytes": 70347
+      "bytes": 70255
     },
     {
       "id": "PDM",
@@ -19035,13 +19035,13 @@
       "id": "PEP",
       "latestDate": "2026-11-03",
       "path": "metrics/PEP.json",
-      "bytes": 71243
+      "bytes": 71148
     },
     {
       "id": "PFE",
       "latestDate": "2026-11-03",
       "path": "metrics/PFE.json",
-      "bytes": 68883
+      "bytes": 68790
     },
     {
       "id": "PFSI",
@@ -19053,19 +19053,19 @@
       "id": "PG",
       "latestDate": "2026-11-03",
       "path": "metrics/PG.json",
-      "bytes": 71278
+      "bytes": 71185
     },
     {
       "id": "PGR",
       "latestDate": "2026-11-03",
       "path": "metrics/PGR.json",
-      "bytes": 71117
+      "bytes": 71000
     },
     {
       "id": "PH",
       "latestDate": "2026-11-03",
       "path": "metrics/PH.json",
-      "bytes": 70577
+      "bytes": 70483
     },
     {
       "id": "PINS",
@@ -19083,25 +19083,25 @@
       "id": "PLD",
       "latestDate": "2026-11-03",
       "path": "metrics/PLD.json",
-      "bytes": 70880
+      "bytes": 70789
     },
     {
       "id": "PLTR",
       "latestDate": "2026-11-03",
       "path": "metrics/PLTR.json",
-      "bytes": 70444
+      "bytes": 70351
     },
     {
       "id": "PM",
       "latestDate": "2026-11-03",
       "path": "metrics/PM.json",
-      "bytes": 70477
+      "bytes": 70387
     },
     {
       "id": "PNC",
       "latestDate": "2026-11-03",
       "path": "metrics/PNC.json",
-      "bytes": 71104
+      "bytes": 71011
     },
     {
       "id": "PPG",
@@ -19131,19 +19131,19 @@
       "id": "PRU",
       "latestDate": "2026-11-03",
       "path": "metrics/PRU.json",
-      "bytes": 69842
+      "bytes": 69752
     },
     {
       "id": "PSA",
       "latestDate": "2026-11-03",
       "path": "metrics/PSA.json",
-      "bytes": 70576
+      "bytes": 70483
     },
     {
       "id": "PSX",
       "latestDate": "2026-11-03",
       "path": "metrics/PSX.json",
-      "bytes": 71071
+      "bytes": 70977
     },
     {
       "id": "PTEN",
@@ -19161,13 +19161,13 @@
       "id": "QCOM",
       "latestDate": "2026-11-03",
       "path": "metrics/QCOM.json",
-      "bytes": 71384
+      "bytes": 71289
     },
     {
       "id": "QQQ",
       "latestDate": "2026-11-03",
       "path": "metrics/QQQ.json",
-      "bytes": 71883
+      "bytes": 71789
     },
     {
       "id": "QSR",
@@ -19209,7 +19209,7 @@
       "id": "REGN",
       "latestDate": "2026-11-03",
       "path": "metrics/REGN.json",
-      "bytes": 70897
+      "bytes": 70804
     },
     {
       "id": "RF",
@@ -19275,7 +19275,7 @@
       "id": "ROST",
       "latestDate": "2026-11-03",
       "path": "metrics/ROST.json",
-      "bytes": 71144
+      "bytes": 71049
     },
     {
       "id": "RPM",
@@ -19299,7 +19299,7 @@
       "id": "RTX",
       "latestDate": "2026-11-03",
       "path": "metrics/RTX.json",
-      "bytes": 70586
+      "bytes": 70496
     },
     {
       "id": "RYAN",
@@ -19323,19 +19323,19 @@
       "id": "SAP",
       "latestDate": "2026-11-03",
       "path": "metrics/SAP.json",
-      "bytes": 70833
+      "bytes": 70742
     },
     {
       "id": "SBUX",
       "latestDate": "2026-11-03",
       "path": "metrics/SBUX.json",
-      "bytes": 68843
+      "bytes": 68752
     },
     {
       "id": "SCHW",
       "latestDate": "2026-11-03",
       "path": "metrics/SCHW.json",
-      "bytes": 68662
+      "bytes": 68569
     },
     {
       "id": "SDRL",
@@ -19371,7 +19371,7 @@
       "id": "SHW",
       "latestDate": "2026-11-03",
       "path": "metrics/SHW.json",
-      "bytes": 71079
+      "bytes": 70983
     },
     {
       "id": "SHY",
@@ -19401,7 +19401,7 @@
       "id": "SLB",
       "latestDate": "2026-11-03",
       "path": "metrics/SLB.json",
-      "bytes": 68672
+      "bytes": 68582
     },
     {
       "id": "SLG",
@@ -19413,7 +19413,7 @@
       "id": "SLV",
       "latestDate": "2026-11-03",
       "path": "metrics/SLV.json",
-      "bytes": 68886
+      "bytes": 68794
     },
     {
       "id": "SLVM",
@@ -19425,13 +19425,13 @@
       "id": "SMCI",
       "latestDate": "2026-11-03",
       "path": "metrics/SMCI.json",
-      "bytes": 68822
+      "bytes": 68733
     },
     {
       "id": "SMH",
       "latestDate": "2026-11-03",
       "path": "metrics/SMH.json",
-      "bytes": 71263
+      "bytes": 71170
     },
     {
       "id": "SMMT",
@@ -19461,13 +19461,13 @@
       "id": "SNPS",
       "latestDate": "2026-11-03",
       "path": "metrics/SNPS.json",
-      "bytes": 70692
+      "bytes": 70599
     },
     {
       "id": "SO",
       "latestDate": "2026-11-03",
       "path": "metrics/SO.json",
-      "bytes": 68158
+      "bytes": 68068
     },
     {
       "id": "SON",
@@ -19485,19 +19485,19 @@
       "id": "SOXX",
       "latestDate": "2026-11-03",
       "path": "metrics/SOXX.json",
-      "bytes": 71229
+      "bytes": 71135
     },
     {
       "id": "SPG",
       "latestDate": "2026-11-03",
       "path": "metrics/SPG.json",
-      "bytes": 71009
+      "bytes": 70916
     },
     {
       "id": "SPGI",
       "latestDate": "2026-11-03",
       "path": "metrics/SPGI.json",
-      "bytes": 70997
+      "bytes": 70905
     },
     {
       "id": "SPOT",
@@ -19509,13 +19509,13 @@
       "id": "SPY",
       "latestDate": "2026-11-03",
       "path": "metrics/SPY.json",
-      "bytes": 71930
+      "bytes": 71834
     },
     {
       "id": "SRE",
       "latestDate": "2026-11-03",
       "path": "metrics/SRE.json",
-      "bytes": 68158
+      "bytes": 68068
     },
     {
       "id": "SRPT",
@@ -19545,13 +19545,13 @@
       "id": "SYK",
       "latestDate": "2026-11-03",
       "path": "metrics/SYK.json",
-      "bytes": 70965
+      "bytes": 70873
     },
     {
       "id": "T",
       "latestDate": "2026-11-03",
       "path": "metrics/T.json",
-      "bytes": 68886
+      "bytes": 68795
     },
     {
       "id": "TAIEX",
@@ -19569,7 +19569,7 @@
       "id": "TDG",
       "latestDate": "2026-11-03",
       "path": "metrics/TDG.json",
-      "bytes": 73058
+      "bytes": 72966
     },
     {
       "id": "TDW",
@@ -19599,19 +19599,19 @@
       "id": "TGT",
       "latestDate": "2026-11-03",
       "path": "metrics/TGT.json",
-      "bytes": 70379
+      "bytes": 70284
     },
     {
       "id": "TJX",
       "latestDate": "2026-11-03",
       "path": "metrics/TJX.json",
-      "bytes": 70580
+      "bytes": 70489
     },
     {
       "id": "TLT",
       "latestDate": "2026-11-03",
       "path": "metrics/TLT.json",
-      "bytes": 68900
+      "bytes": 68807
     },
     {
       "id": "TME",
@@ -19623,13 +19623,13 @@
       "id": "TMO",
       "latestDate": "2026-11-03",
       "path": "metrics/TMO.json",
-      "bytes": 71081
+      "bytes": 70987
     },
     {
       "id": "TMUS",
       "latestDate": "2026-11-03",
       "path": "metrics/TMUS.json",
-      "bytes": 71153
+      "bytes": 71058
     },
     {
       "id": "TNDM",
@@ -19659,7 +19659,7 @@
       "id": "TRGP",
       "latestDate": "2026-11-03",
       "path": "metrics/TRGP.json",
-      "bytes": 70714
+      "bytes": 70623
     },
     {
       "id": "TRMB",
@@ -19683,25 +19683,25 @@
       "id": "TRV",
       "latestDate": "2026-11-03",
       "path": "metrics/TRV.json",
-      "bytes": 70956
+      "bytes": 70862
     },
     {
       "id": "TSLA",
       "latestDate": "2026-11-03",
       "path": "metrics/TSLA.json",
-      "bytes": 71856
+      "bytes": 71760
     },
     {
       "id": "TSM",
       "latestDate": "2026-11-03",
       "path": "metrics/TSM.json",
-      "bytes": 71489
+      "bytes": 71398
     },
     {
       "id": "TT",
       "latestDate": "2026-11-03",
       "path": "metrics/TT.json",
-      "bytes": 70892
+      "bytes": 70798
     },
     {
       "id": "TTEK",
@@ -19713,7 +19713,7 @@
       "id": "TTWO",
       "latestDate": "2026-11-03",
       "path": "metrics/TTWO.json",
-      "bytes": 70922
+      "bytes": 70829
     },
     {
       "id": "TX",
@@ -19725,7 +19725,7 @@
       "id": "TXN",
       "latestDate": "2026-11-03",
       "path": "metrics/TXN.json",
-      "bytes": 71206
+      "bytes": 71113
     },
     {
       "id": "TXRH",
@@ -19755,7 +19755,7 @@
       "id": "UBER",
       "latestDate": "2026-11-03",
       "path": "metrics/UBER.json",
-      "bytes": 68699
+      "bytes": 68607
     },
     {
       "id": "UDR",
@@ -19767,7 +19767,7 @@
       "id": "UNH",
       "latestDate": "2026-11-03",
       "path": "metrics/UNH.json",
-      "bytes": 71276
+      "bytes": 71180
     },
     {
       "id": "UNM",
@@ -19779,25 +19779,25 @@
       "id": "UNP",
       "latestDate": "2026-11-03",
       "path": "metrics/UNP.json",
-      "bytes": 71130
+      "bytes": 71036
     },
     {
       "id": "UPS",
       "latestDate": "2026-11-03",
       "path": "metrics/UPS.json",
-      "bytes": 70099
+      "bytes": 70005
     },
     {
       "id": "URI",
       "latestDate": "2026-11-03",
       "path": "metrics/URI.json",
-      "bytes": 70823
+      "bytes": 70728
     },
     {
       "id": "USB",
       "latestDate": "2026-11-03",
       "path": "metrics/USB.json",
-      "bytes": 68353
+      "bytes": 68262
     },
     {
       "id": "USLM",
@@ -19809,7 +19809,7 @@
       "id": "USO",
       "latestDate": "2026-11-03",
       "path": "metrics/USO.json",
-      "bytes": 68879
+      "bytes": 68788
     },
     {
       "id": "UWMC",
@@ -19821,7 +19821,7 @@
       "id": "V",
       "latestDate": "2026-11-03",
       "path": "metrics/V.json",
-      "bytes": 71182
+      "bytes": 71088
     },
     {
       "id": "VAL",
@@ -19863,7 +19863,7 @@
       "id": "VICI",
       "latestDate": "2026-11-03",
       "path": "metrics/VICI.json",
-      "bytes": 68252
+      "bytes": 68162
     },
     {
       "id": "VIX",
@@ -19875,7 +19875,7 @@
       "id": "VLO",
       "latestDate": "2026-11-03",
       "path": "metrics/VLO.json",
-      "bytes": 71084
+      "bytes": 70990
     },
     {
       "id": "VMC",
@@ -19893,13 +19893,13 @@
       "id": "VNQ",
       "latestDate": "2026-11-03",
       "path": "metrics/VNQ.json",
-      "bytes": 68145
+      "bytes": 68055
     },
     {
       "id": "VOO",
       "latestDate": "2026-11-03",
       "path": "metrics/VOO.json",
-      "bytes": 71229
+      "bytes": 71134
     },
     {
       "id": "VOYA",
@@ -19911,19 +19911,19 @@
       "id": "VRTX",
       "latestDate": "2026-11-03",
       "path": "metrics/VRTX.json",
-      "bytes": 70776
+      "bytes": 70684
     },
     {
       "id": "VST",
       "latestDate": "2026-11-03",
       "path": "metrics/VST.json",
-      "bytes": 70355
+      "bytes": 70264
     },
     {
       "id": "VTI",
       "latestDate": "2026-11-03",
       "path": "metrics/VTI.json",
-      "bytes": 71147
+      "bytes": 71052
     },
     {
       "id": "VTR",
@@ -19935,7 +19935,7 @@
       "id": "VZ",
       "latestDate": "2026-11-03",
       "path": "metrics/VZ.json",
-      "bytes": 68851
+      "bytes": 68761
     },
     {
       "id": "W",
@@ -19983,7 +19983,7 @@
       "id": "WELL",
       "latestDate": "2026-11-03",
       "path": "metrics/WELL.json",
-      "bytes": 70510
+      "bytes": 70420
     },
     {
       "id": "WEX",
@@ -19995,7 +19995,7 @@
       "id": "WFC",
       "latestDate": "2026-11-03",
       "path": "metrics/WFC.json",
-      "bytes": 68776
+      "bytes": 68685
     },
     {
       "id": "WING",
@@ -20013,19 +20013,19 @@
       "id": "WM",
       "latestDate": "2026-11-03",
       "path": "metrics/WM.json",
-      "bytes": 71065
+      "bytes": 70971
     },
     {
       "id": "WMB",
       "latestDate": "2026-11-03",
       "path": "metrics/WMB.json",
-      "bytes": 68175
+      "bytes": 68086
     },
     {
       "id": "WMT",
       "latestDate": "2026-11-03",
       "path": "metrics/WMT.json",
-      "bytes": 70043
+      "bytes": 69952
     },
     {
       "id": "WRB",
@@ -20043,79 +20043,79 @@
       "id": "XEL",
       "latestDate": "2026-11-03",
       "path": "metrics/XEL.json",
-      "bytes": 68169
+      "bytes": 68080
     },
     {
       "id": "XLB",
       "latestDate": "2026-11-03",
       "path": "metrics/XLB.json",
-      "bytes": 68529
+      "bytes": 68439
     },
     {
       "id": "XLC",
       "latestDate": "2026-11-03",
       "path": "metrics/XLC.json",
-      "bytes": 69685
+      "bytes": 69596
     },
     {
       "id": "XLE",
       "latestDate": "2026-11-03",
       "path": "metrics/XLE.json",
-      "bytes": 68881
+      "bytes": 68789
     },
     {
       "id": "XLF",
       "latestDate": "2026-11-03",
       "path": "metrics/XLF.json",
-      "bytes": 68887
+      "bytes": 68797
     },
     {
       "id": "XLI",
       "latestDate": "2026-11-03",
       "path": "metrics/XLI.json",
-      "bytes": 71406
+      "bytes": 71313
     },
     {
       "id": "XLK",
       "latestDate": "2026-11-03",
       "path": "metrics/XLK.json",
-      "bytes": 71216
+      "bytes": 71125
     },
     {
       "id": "XLP",
       "latestDate": "2026-11-03",
       "path": "metrics/XLP.json",
-      "bytes": 68659
+      "bytes": 68567
     },
     {
       "id": "XLRE",
       "latestDate": "2026-11-03",
       "path": "metrics/XLRE.json",
-      "bytes": 68213
+      "bytes": 68123
     },
     {
       "id": "XLU",
       "latestDate": "2026-11-03",
       "path": "metrics/XLU.json",
-      "bytes": 68871
+      "bytes": 68780
     },
     {
       "id": "XLV",
       "latestDate": "2026-11-03",
       "path": "metrics/XLV.json",
-      "bytes": 71435
+      "bytes": 71342
     },
     {
       "id": "XLY",
       "latestDate": "2026-11-03",
       "path": "metrics/XLY.json",
-      "bytes": 70174
+      "bytes": 70083
     },
     {
       "id": "XOM",
       "latestDate": "2026-11-03",
       "path": "metrics/XOM.json",
-      "bytes": 71452
+      "bytes": 71360
     },
     {
       "id": "XPO",
@@ -20157,7 +20157,7 @@
       "id": "ZTS",
       "latestDate": "2026-11-03",
       "path": "metrics/ZTS.json",
-      "bytes": 70688
+      "bytes": 70595
     }
   ],
   "sidecars": [
@@ -20178,13 +20178,13 @@
     },
     {
       "name": "us_index_history.json",
-      "bytes": 278805,
-      "sha256": "b78c8ee9fc2b1df53dd1a1d281a7f28c88b3c62780d3dd9d54da8e2fa0756b5f"
+      "bytes": 278520,
+      "sha256": "95bbf17f67eae9722db469a615b5032fac261991e0b26e35ac830d463a3686be"
     },
     {
       "name": "us_options_wall.json",
-      "bytes": 3383,
-      "sha256": "ce6398576a4050f0ff519823358a28d701da77de0693eeb761a50cf272c2e8b3"
+      "bytes": 3400,
+      "sha256": "bcc906f1fe7659333515d1c105467e377fe7f285b2fa2343e47a951cfa88507b"
     },
     {
       "name": "us_stock_directory.json",
@@ -20192,5 +20192,5 @@
       "sha256": "660cb3aaa5429e4a8d4a2ef1e8c89739714410b3ccdb572ab425a543589923ba"
     }
   ],
-  "bundleBytes": 81285075
+  "bundleBytes": 81280353
 }
